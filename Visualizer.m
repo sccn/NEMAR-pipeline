@@ -45,8 +45,8 @@ classdef Visualizer
                     if endLat > finalLat
                         endLat = finalLat;
                     end
-                    eegplot(EEG.data(:,startLat:endLat), 'srate', EEG.srate, ...
-                            'winlength', 2, 'eloc_file', EEG.chanlocs, 'noui', 'on', 'title','');
+                    eegplot(EEG.data, 'srate', EEG.srate, ...
+                            'winlength', 2, 'eloc_file', EEG.chanlocs, 'noui', 'on', 'title','', 'time', startLat/EEG.srate);
 
                     % print(gcf,'-dsvg','-noui',fullfile(plot_outpath, [ result_basename '_eegplot' '_lat-' num2str(startLat) '.svg' ]))
                     print(gcf,'-djpeg','-noui',fullfile(plot_outpath, [ result_basename '_eegplot' '_lat-' num2str(startLat) '.jpeg' ]))
