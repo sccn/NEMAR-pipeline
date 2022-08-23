@@ -1,24 +1,36 @@
-function bids_preprocess(bids_path, eeglab_root_path)
-nemar_path = '/expanse/projects/nemar/openneuro'
-outdir = fullfile(nemar_path, 'processed');
+function bids_preprocess(dsnumber, varargin)
+nemar_path = '/expanse/projects/nemar/openneuro';
+opt = finputcheck(varargin, { ...
+    'bidspath'       'string'    {}    fullfile(nemar_path, dsnumber);  ...
+    'eeglabroot'     'string'    {}    '/expanse/projects/nemar/dtyoung/NEMAR-pipeline'; ...
+    'logdir'         'string'    {}    fullfile(nemar_path, 'processed', dsnumber, 'logs'); ...
+    'outputdir'      'string'    { }   fullfile(nemar_path, 'processed'); ...
+    }, 'bids_preprocess');
+if isstr(opt), error(opt); end
+
 % check folder
-addpath(fullfile(eeglab_root_path,'eeglab'));
-addpath(fullfile(eeglab_root_path,'JSONio'));
+addpath(fullfile(opt.eeglabroot,'eeglab'));
+addpath(fullfile(opt.eeglabroot,'JSONio'));
 eeglab nogui;
-if ~exist(fullfile(bids_path,'dataset_description.json'), 'file')
+if ~exist(fullfile(opt.bidspath,'dataset_description.json'), 'file')
     error('Dataset description file not found');
 end
 
 % import data
-[STUDY, ALLEEG, dsname] = load_dataset(bids_path, outdir)
+[STUDY, ALLEEG, dsname] = load_dataset(opt.bidspath, opt.outputdir);
+
+if ~exist(opt.logdir, 'dir')
+    mkdir(opt.logdir);
+end
+
 % pop_editoptions( 'option_storedisk', 0); % load all data
 %[STUDY, ALLEEG] = pop_importbids(filepath, 'studyName','FirstEpisodePsychosisRestingEEG', 'bidsevent', 'off');
 
 % % remove non-ALLEEG channels (it is also possible to process ALLEEG data with non-ALLEEG data
 % get non-EEG channels
-all_chans = {ALLEEG(1).chanlocs.labels}
-types = {ALLEEG(1).chanlocs.type}
-non_eeg_channels = all_chans(~strcmp(types, 'EEG')) % relying on the import tool to import channel types
+all_chans = {ALLEEG(1).chanlocs.labels};
+types = {ALLEEG(1).chanlocs.type};
+non_eeg_channels = all_chans(strcmp(types, 'EEG')); % relying on the import tool to import channel types. Currently there's issue
 % remove non-EEG channels
 options = {'nochannel', non_eeg_channels};
 ALLEEG = parexec(ALLEEG, 'pop_select', 'logs', options{:});
