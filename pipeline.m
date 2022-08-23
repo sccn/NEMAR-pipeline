@@ -10,14 +10,15 @@ if ~exist(fullfile(bids_path,'dataset_description.json'), 'file')
 end
 
 % import data
-[STUDY, ALLEEG, dsname] = load_dataset(bids_path, )
+[STUDY, ALLEEG, dsname] = load_dataset(bids_path, outdir)
 % pop_editoptions( 'option_storedisk', 0); % load all data
 %[STUDY, ALLEEG] = pop_importbids(filepath, 'studyName','FirstEpisodePsychosisRestingEEG', 'bidsevent', 'off');
 
 % % remove non-ALLEEG channels (it is also possible to process ALLEEG data with non-ALLEEG data
 % get non-EEG channels
-all_chans = (ALLEEG(1).chanlocs.labels);
-non_eeg_channels = all_chans(~strcmp({ALLEEG(1).chanlocs.type}, 'EEG')); % relying on the import tool to import channel types
+all_chans = {ALLEEG(1).chanlocs.labels}
+types = {ALLEEG(1).chanlocs.type}
+non_eeg_channels = all_chans(~strcmp(types, 'EEG')) % relying on the import tool to import channel types
 % remove non-EEG channels
 options = {'nochannel', non_eeg_channels};
 ALLEEG = parexec(ALLEEG, 'pop_select', 'logs', options{:});
@@ -56,4 +57,5 @@ function save_datasets(ALLEEG)
     for i=1:numel(ALLEEG)
         pop_saveset(ALLEEG(i), 'filepath', ALLEEG(i).filepath, 'filename', ALLEEG(i).filename);
     end
+end
 end
