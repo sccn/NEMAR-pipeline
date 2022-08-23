@@ -1,5 +1,9 @@
 function bids_preprocess(dsnumber, varargin)
 nemar_path = '/expanse/projects/nemar/openneuro';
+eeglabrot = '/expanse/projects/nemar/dtyoung/NEMAR-pipeline';
+addpath(fullfile(opt.eeglabroot,'eeglab'));
+addpath(fullfile(opt.eeglabroot,'JSONio'));
+eeglab nogui;
 opt = finputcheck(varargin, { ...
     'bidspath'       'string'    {}    fullfile(nemar_path, dsnumber);  ...
     'eeglabroot'     'string'    {}    '/expanse/projects/nemar/dtyoung/NEMAR-pipeline'; ...
@@ -8,10 +12,13 @@ opt = finputcheck(varargin, { ...
     }, 'bids_preprocess');
 if isstr(opt), error(opt); end
 
-% check folder
-addpath(fullfile(opt.eeglabroot,'eeglab'));
-addpath(fullfile(opt.eeglabroot,'JSONio'));
-eeglab nogui;
+% reload eeglab if different version specified
+if ~strcmp(eeglabroot, opt.eeglabroot)
+    addpath(fullfile(opt.eeglabroot,'eeglab'));
+    addpath(fullfile(opt.eeglabroot,'JSONio'));
+    eeglab nogui;
+end
+
 if ~exist(fullfile(opt.bidspath,'dataset_description.json'), 'file')
     error('Dataset description file not found');
 end
