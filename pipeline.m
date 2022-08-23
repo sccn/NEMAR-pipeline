@@ -23,15 +23,15 @@ if ~exist(fullfile(opt.bidspath,'dataset_description.json'), 'file')
     error('Dataset description file not found');
 end
 
-% import data
-[STUDY, ALLEEG, dsname] = load_dataset(opt.bidspath, opt.outputdir);
-
 if ~exist(opt.logdir, 'dir')
     status = mkdir(opt.logdir);
     if ~status
         error('Could not create log directory');
     end
 end
+
+% import data
+[STUDY, ALLEEG, dsname] = load_dataset(opt.bidspath, opt.outputdir);
 
 % pop_editoptions( 'option_storedisk', 0); % load all data
 %[STUDY, ALLEEG] = pop_importbids(filepath, 'studyName','FirstEpisodePsychosisRestingEEG', 'bidsevent', 'off');
