@@ -4,7 +4,7 @@ opt = finputcheck(varargin, { ...
     'bidspath'       'string'    {}    fullfile(nemar_path, dsnumber);  ...
     'eeglabroot'     'string'    {}    '/expanse/projects/nemar/dtyoung/NEMAR-pipeline'; ...
     'logdir'         'string'    {}    fullfile(nemar_path, 'processed', dsnumber, 'logs'); ...
-    'outputdir'      'string'    { }   fullfile(nemar_path, 'processed'); ...
+    'outputdir'      'string'    { }   fullfile(nemar_path, 'processed', dsnumber); ...
     }, 'bids_preprocess');
 if isstr(opt), error(opt); end
 
@@ -20,7 +20,10 @@ end
 [STUDY, ALLEEG, dsname] = load_dataset(opt.bidspath, opt.outputdir);
 
 if ~exist(opt.logdir, 'dir')
-    mkdir(opt.logdir);
+    status = mkdir(opt.logdir);
+    if ~status
+        error('Could not create log directory');
+    end
 end
 
 % pop_editoptions( 'option_storedisk', 0); % load all data
