@@ -43,7 +43,7 @@ types = {ALLEEG(1).chanlocs.type};
 non_eeg_channels = all_chans(strcmp(types, 'EEG')); % relying on the import tool to import channel types. Currently there's issue
 % remove non-EEG channels
 options = {'nochannel', non_eeg_channels};
-ALLEEG = parexec(ALLEEG, 'pop_select', 'logs', options{:});
+ALLEEG = parexec(ALLEEG, 'pop_select', opt.logdir, options{:});
 % ALLEEG = pop_select( ALLEEG,'nochannel',{'VEOG', 'Misc', 'ECG', 'M2'});
 % 
 % % compute average reference
@@ -54,7 +54,7 @@ options = {'FlatlineCriterion',5,'ChannelCriterion',0.85, ...
     'LineNoiseCriterion',4,'Highpass',[0.25 0.75] ,'BurstCriterion',20, ...
     'WindowCriterion',0.25,'BurstRejection','on','Distance','Euclidian', ...
     'WindowCriterionTolerances',[-Inf 7] ,'fusechanrej',1};
-ALLEEG = parexec(ALLEEG, 'pop_clean_rawdata', 'logs', options{:});
+ALLEEG = parexec(ALLEEG, 'pop_clean_rawdata', opt.logdir, options{:});
 % ALLEEG = pop_clean_rawdata( ALLEEG,);
 save_datasets(ALLEEG)
 
@@ -65,7 +65,7 @@ save_datasets(ALLEEG)
 
 % run ICA reducing the dimention by 1 to account for average reference 
 options = {'icatype','runica','concatcond','on','options',{'pca',-1}};
-ALLEEG = parexec(ALLEEG, 'pop_runica', 'logs', options{:});
+ALLEEG = parexec(ALLEEG, 'pop_runica', opt.logdir, options{:});
 % ALLEEG = pop_runica(ALLEEG,);
 save_datasets(ALLEEG)
 

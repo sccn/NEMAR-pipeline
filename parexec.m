@@ -5,7 +5,7 @@ function ALLEEG = parexec(data, fun, logdir, varargin)
     fprintf(fid, optionsText);
     fclose(fid);
     ALLEEG = data;
-    
+    parpool(12); 
     parfor i=1:numel(data)
        EEG = data(i);
        try
