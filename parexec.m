@@ -22,8 +22,13 @@ function ALLEEG = parexec(data, fun, logdir, varargin)
            fid = openfile(sprintf('%s/subject_%s.err',logdir, EEG.filename),'a');
            fprintf(fid, '\t%s:%s\n', ME.identifier, ME.message);
            fclose(fid);
+           error("Error evaluating %s at file %s", fun, fullfile(EEG.filepath, EEG.filename));
        end
     end
+
+    fid = openfile(sprintf('%s/stdout', logdir),'a');
+    fprintf(fid, 'Finished %s\n', fun);
+    fclose(fid);
     
     function text = argArray2Str(cellArray)
         text = [];
