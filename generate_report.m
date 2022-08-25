@@ -8,6 +8,7 @@ function generate_report(dsnumber, varargin)
         'bidspath'       'string'    {}    fullfile(nemar_path, dsnumber);  ...
         'eeglabroot'     'string'    {}    eeglabroot; ...
         'reportdir'      'string'    {}    fullfile(nemar_path, 'processed', dsnumber); ...
+        'ALLEEG'         'struct'    {}    []; ...
         }, 'generate_report');
     if isstr(opt), error(opt); end
 
@@ -18,19 +19,46 @@ function generate_report(dsnumber, varargin)
         eeglab nogui;
     end
 
+    % import data
+    if isempty(opt.ALLEEG)
+        [STUDY, ALLEEG, dsname] = load_dataset(opt.bidspath, opt.outputdir);
+    else
+        ALLEEG = opt.ALLEEG;
+    end
+
+    goodDataPs = [];
+    goodChanPs = [];
+    goodICPs = [];
+    for i=1:numel(ALLEEG)
+        EEG = ALLEEG(i);
+        report_file = fullfile(EEG.filepath, [EEG.filename(1:end-4) '_dataqual.json']);
+        fid = fopen(report_file,'w');
+        fprintf(fid,'{}');
+        fclose(fid);
+
+        [dataP, chanP] = cleanraw_report(EEG, report_file);
+        icaP = ica_report(EEG, report_file);
+
+        goodDataPs = [goodDataPs dataP];
+        goodChanPs = [goodChanPs chanP];
+        goodICPs = [goodICPs icaP];
+    end
+
+    % dataset level report
     report_file = fullfile(opt.reportdir, 'dataqual.json');
-    % recreate
     fid = fopen(report_file,'w');
     fprintf(fid,'{}');
     fclose(fid);
+    cur_report = jsonread(report_file);
+    cur_report.goodDataPercentMin = min(goodDataPs);
+    cur_report.goodDataPercentMax = max(goodDataPs);
+    cur_report.goodChansPercentMin = min(goodChanPs);
+    cur_report.goodChansPercentMax = max(goodChanPs);
+    cur_report.goodICAPercentMin = min(goodICPs);
+    cur_report.goodICAPercentMax = max(goodICPs);
+    jsonwrite(report_file, cur_report);
 
-    for i=1:numel(ALLEEG)
-        EEG = ALLEEG(i);
-        cleanraw_report(EEG, report_file);
-        ica_report(EEG, report_file);
-    end
-
-    function cleanraw_report(EEG, report_file)
+    function [goodDataPercent, goodChanPercent] = cleanraw_report(EEG, report_file)
         %report.append_report('asrFail', 0, outpath, result_basename);
         cur_report = jsonread(report_file);
         cur_report.nGoodData = EEG.pnts;
@@ -38,9 +66,12 @@ function generate_report(dsnumber, varargin)
         cur_report.nGoodChans = EEG.nbchan;
         cur_report.goodChansPercent = 100*EEG.nbchan/EEG.etc.orinbchan;
         jsonwrite(report_file, cur_report);
+
+        goodDataPercent = 100*EEG.pnts/EEG.etc.oripnts;
+        goodChanPercent = 100*EEG.nbchan/EEG.etc.orinbchan;
     end
 
-    function ica_report(EEG, report_file)
+    function goodICPercent = ica_report(EEG, report_file)
         cur_report = jsonread(report_file);
         if isfield(EEG, 'icaact') && ~isempty(EEG.icaact)
             cur_report.icaFail = 0;
@@ -49,8 +80,11 @@ function generate_report(dsnumber, varargin)
             cur_report.nICs = numICs;
             cur_report.nGoodICs = numICs-rejected_ICs;
             cur_report.goodICA = 100*(numICs-rejected_ICs)/numICs;
+
+            goodICPercent = 100*(numICs-rejected_ICs)/numICs;
         else
             cur_report.icaFail = 1;
+            goodICPercent = -1;
         end
         jsonwrite(report_file, cur_report);
     end
