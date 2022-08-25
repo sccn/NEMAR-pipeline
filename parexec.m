@@ -5,7 +5,10 @@ function ALLEEG = parexec(data, fun, logdir, varargin)
     fprintf(fid, optionsText);
     fclose(fid);
     ALLEEG = data;
-    parpool(12); 
+
+    delete(gcp('nocreate')); %delete the current pool
+    parpool(12,'IdleTimeout',Inf);
+
     parfor i=1:numel(data)
        EEG = data(i);
        try
