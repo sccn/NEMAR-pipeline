@@ -72,6 +72,7 @@ save_datasets(ALLEEG)
 % % run ICLabel and flag artifactual components
 ALLEEG = pop_iclabel(ALLEEG, 'default');
 ALLEEG = pop_icflag( ALLEEG,[NaN NaN;0.9 1;0.9 1;NaN NaN;NaN NaN;NaN NaN;NaN NaN]);
+save_datasets(ALLEEG)
 
 % pop_editoptions( 'option_storedisk', 1); % only one dataset at a time
 
