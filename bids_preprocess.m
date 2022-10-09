@@ -1,9 +1,13 @@
 function bids_preprocess(dsnumber, varargin)
 nemar_path = '/expanse/projects/nemar/openneuro';
 eeglabroot = '/expanse/projects/nemar/dtyoung/NEMAR-pipeline';
-addpath(fullfile(eeglabroot,'eeglab'));
-addpath(fullfile(eeglabroot,'JSONio'));
-eeglab nogui;
+
+if isempty(which('finputcheck'))
+    addpath(fullfile(eeglabroot,'eeglab'));
+    addpath(fullfile(eeglabroot,'JSONio'));
+    eeglab nogui;
+end
+
 opt = finputcheck(varargin, { ...
     'bidspath'       'string'    {}    fullfile(nemar_path, dsnumber);  ...
     'eeglabroot'     'string'    {}    eeglabroot; ...

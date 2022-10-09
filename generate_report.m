@@ -5,10 +5,9 @@ function generate_report(dsnumber, varargin)
     addpath(fullfile(eeglabroot,'JSONio'));
     eeglab nogui;
     opt = finputcheck(varargin, { ...
-        'bidspath'       'string'    {}    fullfile(nemar_path, dsnumber);  ...
         'eeglabroot'     'string'    {}    eeglabroot; ...
-        'reportdir'      'string'    {}    fullfile(nemar_path, 'processed', dsnumber); ...
-        'ALLEEG'         'struct'    {}    []; ...
+        'datasetdir'      'string'    {}    fullfile(nemar_path, 'processed', dsnumber); ...
+        'ALLEEG'         'struct'    []    struct([]); ...
         }, 'generate_report');
     if isstr(opt), error(opt); end
 
@@ -19,11 +18,12 @@ function generate_report(dsnumber, varargin)
         eeglab nogui;
     end
 
-    % import data
-    if isempty(opt.ALLEEG)
-        [STUDY, ALLEEG, dsname] = load_dataset(opt.bidspath, opt.outputdir);
+    % load data
+    studyFile = fullfile(opt.datasetdir, [dsnumber '.study']);
+    if exist(studyFile, 'file')
+	[STUDY, ALLEEG] = pop_loadstudy(studyFile);
     else
-        ALLEEG = opt.ALLEEG;
+        error('Dataset has not been imported');
     end
 
     goodDataPs = [];
@@ -45,7 +45,7 @@ function generate_report(dsnumber, varargin)
     end
 
     % dataset level report
-    report_file = fullfile(opt.reportdir, 'dataqual.json');
+    report_file = fullfile(opt.datasetdir, 'dataqual.json');
     fid = fopen(report_file,'w');
     fprintf(fid,'{}');
     fclose(fid);

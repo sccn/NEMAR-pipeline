@@ -19,6 +19,6 @@ echo "#SBATCH --ntasks-per-node=1" >> $sbatchfile
 echo "" >> $sbatchfile
 echo "cd /home/dtyoung/NEMAR-pipeline" >> $sbatchfile
 echo "module load matlab" >> $sbatchfile
-echo "matlab -nodisplay -r \"pipeline('$dsnumber');\"" >> $sbatchfile
+echo "matlab -nodisplay -r \"run_pipeline('$dsnumber');\"" >> $sbatchfile
 
 sbatch $sbatchfile

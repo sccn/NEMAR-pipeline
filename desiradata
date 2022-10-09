@@ -1,0 +1,7 @@
+Want a script that can 
+- create directory under logs for each dataset
+- create a sbatch file for just that dataset and save it under logs
+	- The file should be self-executable
+	- The logging of the sbatch should be put under that directory
+- submit the sbatch job
+- be executed from the command line without loading matlab for convenience

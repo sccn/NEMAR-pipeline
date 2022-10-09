@@ -1,13 +1,13 @@
-function processing_pipeline(filepath, outpath, root_path)
+function processing_pipeline_OO(filepath, outpath, root_path)
     [STUDY, ALLEEG, dsname] = load_dataset(filepath, outpath, root_path);
     regenerate_plots = true;
-    rerun_processing = true;
+    rerun_processing = false;
     rerun_clean_raw = false;
     rerun_ICA = false;
 
     report = Report(sprintf('%s/%s',outpath, dsname));
     % start pipeline
-    for iDat = 1:2%length(ALLEEG)
+    for iDat = 10%length(ALLEEG)
         EEG = ALLEEG(iDat);
 
         result_basename = EEG.filename(1:end-4); % for plots
@@ -48,7 +48,7 @@ function processing_pipeline(filepath, outpath, root_path)
 
                 % generate plots of un-cleaned data
                 Visualizer.plot_raw_mid_segment(EEG, outpath, result_basename, report);
-                % Visualizer.plot_raw_all_segment(EEG, outpath, result_basename, report);
+                Visualizer.plot_raw_all_segment(EEG, outpath, result_basename, report);
                 Visualizer.plot_spectra(EEG, outpath, result_basename, report);
 
                 % clean data and run ICA

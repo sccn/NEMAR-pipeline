@@ -1,0 +1,12 @@
+#!/bin/bash
+
+#SBATCH --partition=compute
+#SBATCH --nodes=1
+#SBATCH --mem=128G
+#SBATCH --account=csd403
+#SBATCH --no-requeue
+#SBATCH -t 12:00:00
+#SBATCH --ntasks-per-node=1
+cd /home/dtyoung/NEMAR-pipeline
+module load matlab
+matlab -nodisplay -r "pipeline('ds003522');"
