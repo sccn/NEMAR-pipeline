@@ -7,7 +7,8 @@ function ALLEEG = parexec(data, fun, logdir, varargin)
     ALLEEG = data;
 
     delete(gcp('nocreate')); %delete the current pool
-    parpool(12,'IdleTimeout',Inf);
+    myCluster = parcluster('local');
+    parpool(myCluster.NumWorkers,'IdleTimeout',Inf);
 
     parfor i=1:numel(data)
        EEG = data(i);
