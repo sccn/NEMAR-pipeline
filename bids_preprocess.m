@@ -42,14 +42,32 @@ end
 
 % % remove non-ALLEEG channels (it is also possible to process ALLEEG data with non-ALLEEG data
 % get non-EEG channels
-all_chans = {ALLEEG(1).chanlocs.labels};
-types = {ALLEEG(1).chanlocs.type};
-non_eeg_channels = all_chans(strcmp(types, 'EEG')); % relying on the import tool to import channel types. Currently there's issue
-% remove non-EEG channels
-options = {'nochannel', non_eeg_channels};
-ALLEEG = parexec(ALLEEG, 'pop_select', opt.logdir, options{:});
+%all_chans = {ALLEEG(1).chanlocs.labels};
+% keep only EEG channels
+if isfield(ALLEEG(1).chanlocs, 'type')
+    types = {ALLEEG(1).chanlocs.type};
+    eeg_indices = strmatch('EEG', types)';
+    if size(eeg_indices,2) == 1 && size(eeg_indices,1) > 1
+        eeg_indices = eeg_indices';
+    end
+    if ~isempty(eeg_indices)
+        options = {'channel', eeg_indices};
+        ALLEEG = parexec(ALLEEG, 'pop_select', opt.logdir, options{:});
+    else
+        warning("No EEG channels detected (for first EEG file)");
+    end
+else
+    warning("Channel type not detected (for first EEG file)");
+end
 % ALLEEG = pop_select( ALLEEG,'nochannel',{'VEOG', 'Misc', 'ECG', 'M2'});
-% 
+
+if isfield(ALLEEG(1).chanlocs, 'theta')
+    thetas = [ALLEEG(1).chanlocs.theta];
+    if isempty(thetas)
+        warning("No channel locations detected (for first EEG file)");
+    end
+end
+
 % % compute average reference
 ALLEEG = pop_reref( ALLEEG,[]);
 

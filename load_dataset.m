@@ -18,7 +18,7 @@ function [STUDY, ALLEEG, dsname] = load_dataset(filepath, outputDir)
     if ~exist(studyFile, 'file') || strcmpi(modeval, 'import')
         if ismember(dsname, useBidsChans), bidsChan = 'on'; else bidsChan = 'off'; end
         disp(['bidsChan ' bidsChan]);
-        [STUDY, ALLEEG] = pop_importbids(filepath, 'bidsevent','off','bidschanloc', bidsChan,'studyName',dsname,'outputdir', outputDir);
+        [STUDY, ALLEEG] = pop_importbids(filepath, 'bidsevent','off','bidschanloc', 'on','studyName',dsname,'outputdir', outputDir);
     else
         tic
         [STUDY, ALLEEG] = pop_loadstudy(studyFile);

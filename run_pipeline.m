@@ -13,6 +13,7 @@ function run_pipeline(dsnumber)
 
     bids_preprocess(dsnumber, varargin{:});
     generate_vis(dsnumber, varargin{:});
+    generate_report(dsnumber, varargin{:});
 
     % we want each part of the pipeline is runnable on its own
     % and we also want to trigger all of them sequentially in the main pipeline
