@@ -35,7 +35,7 @@ function ALLEEG = parexec(data, fun, logdir, varargin)
     fclose(fid);
     
     function text = argArray2Str(cellArray)
-        text = [];
+        text = '';
         for idx=1:numel(cellArray)
             item = cellArray{idx};
             if isnumeric(item)

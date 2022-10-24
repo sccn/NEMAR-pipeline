@@ -13,6 +13,7 @@ opt = finputcheck(varargin, { ...
     'eeglabroot'     'string'    {}    eeglabroot; ...
     'logdir'         'string'    {}    fullfile(nemar_path, 'processed', 'logs', dsnumber); ...
     'outputdir'      'string'    { }   fullfile(nemar_path, 'processed', dsnumber); ...
+    'verbose'        'boolean'   {}    false; ...
     }, 'bids_preprocess');
 if isstr(opt), error(opt); end
 
@@ -37,12 +38,13 @@ end
 % import data
 [STUDY, ALLEEG, dsname] = load_dataset(opt.bidspath, opt.outputdir);
 
-% pop_editoptions( 'option_storedisk', 0); % load all data
-%[STUDY, ALLEEG] = pop_importbids(filepath, 'studyName','FirstEpisodePsychosisRestingEEG', 'bidsevent', 'off');
+if verbose
+    disp('Check channel location after importing\n');
+    ALLEEG(1).chanlocs(1)
+end
 
 % % remove non-ALLEEG channels (it is also possible to process ALLEEG data with non-ALLEEG data
 % get non-EEG channels
-%all_chans = {ALLEEG(1).chanlocs.labels};
 % keep only EEG channels
 if isfield(ALLEEG(1).chanlocs, 'type')
     types = {ALLEEG(1).chanlocs.type};
