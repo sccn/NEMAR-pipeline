@@ -22,6 +22,9 @@ if ~strcmp(eeglabroot, opt.eeglabroot)
     addpath(fullfile(opt.eeglabroot,'eeglab'));
     addpath(fullfile(opt.eeglabroot,'JSONio'));
     eeglab nogui;
+    if opt.verbose
+	which pop_importbids;
+    end
 end
 
 if ~exist(fullfile(opt.bidspath,'dataset_description.json'), 'file')
@@ -36,9 +39,10 @@ if ~exist(opt.logdir, 'dir')
 end
 
 % import data
+pop_editoptions( 'option_storedisk', 1);
 [STUDY, ALLEEG, dsname] = load_dataset(opt.bidspath, opt.outputdir);
 
-if verbose
+if opt.verbose
     disp('Check channel location after importing\n');
     ALLEEG(1).chanlocs(1)
 end
@@ -56,7 +60,7 @@ if isfield(ALLEEG(1).chanlocs, 'type')
         options = {'channel', eeg_indices};
         ALLEEG = parexec(ALLEEG, 'pop_select', opt.logdir, options{:});
     else
-        warning("No EEG channels detected (for first EEG file)");
+        warning("No EEG channel type detected (for first EEG file). Keeping all channels");
     end
 else
     warning("Channel type not detected (for first EEG file)");

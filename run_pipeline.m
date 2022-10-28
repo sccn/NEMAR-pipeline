@@ -9,7 +9,7 @@ function run_pipeline(dsnumber)
     addpath(fullfile(eeglabroot,'JSONio'));
     eeglab nogui;
 
-    varargin = {'bidspath', bidspath, 'eeglabroot', eeglabroot, 'logdir', logdir, 'outputdir', outputdir};
+    varargin = {'bidspath', bidspath, 'eeglabroot', eeglabroot, 'logdir', logdir, 'outputdir', outputdir, 'verbose', true};
 
     bids_preprocess(dsnumber, varargin{:});
     generate_vis(dsnumber, varargin{:});
