@@ -1,5 +1,6 @@
 {
     "data_quality": {
+        "extension": "_dataqual.json",
         "good_sample": {
             "title": "Percentage of good data",
             "field": "goodDataPercent"
