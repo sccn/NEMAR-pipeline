@@ -61,14 +61,14 @@ function generate_report(dsnumber, varargin)
     function [goodDataPercent, goodChanPercent] = cleanraw_report(EEG, report_file)
         %report.append_report('asrFail', 0, outpath, result_basename);
         cur_report = jsonread(report_file);
+        goodDataPercent = 100*EEG.pnts/numel(EEG.etc.clean_sample_mask); % new change to clean_raw_data
+        goodChanPercent = 100*EEG.nbchan/numel(EEG.etc.clean_channel_mask);
         cur_report.nGoodData = EEG.pnts;
-        cur_report.goodDataPercent = 100*EEG.pnts/EEG.etc.oripnts;
+        cur_report.goodDataPercent = goodDataPercent;
         cur_report.nGoodChans = EEG.nbchan;
-        cur_report.goodChansPercent = 100*EEG.nbchan/EEG.etc.orinbchan;
+        cur_report.goodChansPercent = goodChanPercent;
         jsonwrite(report_file, cur_report);
 
-        goodDataPercent = 100*EEG.pnts/EEG.etc.oripnts;
-        goodChanPercent = 100*EEG.nbchan/EEG.etc.orinbchan;
     end
 
     function goodICPercent = ica_report(EEG, report_file)
