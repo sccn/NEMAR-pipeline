@@ -1,0 +1,34 @@
+{
+    "data_quality": {
+        "good_sample": {
+            "title": "Percentage of good data",
+            "field": "goodDataPercent"
+        },
+        "good_channel_count": {
+            "title": "Number of good channels",
+            "field": "nGoodChans"
+        },
+        "good_channel_percent": {
+            "title": "Percentage of good channels",
+            "field": "goodChansPercent"
+        }
+    },
+    "visualization": {
+        "raw_mid_segment": {
+            "plot_title": "Sample scalp channel data (mid 2 seconds)",
+            "extension": "_eegplot_mid-sample.svg"
+        },
+        "spectra": {
+            "plot_title": "Scalp channel log spectra",
+            "extension": "_spectopo.svg"
+        },
+        "icamap": {
+            "plot_title": "Independent component activation map",
+            "extension": "_icamaps.svg"
+        },
+        "icaact": {
+            "plot_title": "Sample independent component activation plot",
+            "extension": "_icact.svg"
+        }
+    }
+}
