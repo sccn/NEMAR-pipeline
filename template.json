@@ -1,6 +1,6 @@
 {
     "data_quality": {
-        "basename": "(.*_eeg)",
+        "anchor": "(.*_eeg)(.set)",
         "extension": "_dataqual.json",
         "fields": [
             {
@@ -18,7 +18,7 @@
         ]
     },
     "visualization": {
-        "basename": "(.*_eeg)",
+        "anchor": "(.*_eeg)(.set)",
         "plots": [
             {
                 "title": "Sample scalp channel data (mid 2 seconds)",
