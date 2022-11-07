@@ -1,5 +1,6 @@
 {
     "data_quality": {
+        "basename": "(.*_eeg)",
         "extension": "_dataqual.json",
         "fields": [
             {
@@ -16,22 +17,25 @@
             }
         ]
     },
-    "visualization": [
-        {
-            "title": "Sample scalp channel data (mid 2 seconds)",
-            "extension": "_eegplot_mid-sample.svg"
-        },
-        {
-            "title": "Scalp channel log spectra",
-            "extension": "_spectopo.svg"
-        },
-        {
-            "title": "Independent component activation map",
-            "extension": "_icamaps.svg"
-        },
-        {
-            "title": "Sample independent component activation plot",
-            "extension": "_icact.svg"
-        }
-    ]
+    "visualization": {
+        "basename": "(.*_eeg)",
+        "plots": [
+            {
+                "title": "Sample scalp channel data (mid 2 seconds)",
+                "extension": "_eegplot_mid-sample.svg"
+            },
+            {
+                "title": "Scalp channel log spectra",
+                "extension": "_spectopo.svg"
+            },
+            {
+                "title": "Independent component activation map",
+                "extension": "_icamaps.svg"
+            },
+            {
+                "title": "Sample independent component activation plot",
+                "extension": "_icact.svg"
+            }
+        ]
+    }
 }
