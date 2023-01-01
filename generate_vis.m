@@ -1,5 +1,5 @@
 function generate_vis(dsnumber, varargin)
-    nemar_path = '/expanse/projects/nemar/openneuro';
+    nemar_path = '/expanse/projects/nemar/openneuro/processed';
     eeglabroot = '/expanse/projects/nemar/dtyoung/NEMAR-pipeline';
 
     if isempty(which('finputcheck'))
@@ -10,8 +10,8 @@ function generate_vis(dsnumber, varargin)
     opt = finputcheck(varargin, { ...
         'bidspath'       'string'    {}    fullfile(nemar_path, dsnumber);  ...
         'eeglabroot'     'string'    {}    eeglabroot; ...
-        'logdir'         'string'    {}    fullfile(nemar_path, 'processed', 'logs', dsnumber); ...
-        'outputdir'      'string'    { }   fullfile(nemar_path, 'processed', dsnumber); ...
+        'logdir'         'string'    {}    fullfile(nemar_path, 'logs', dsnumber); ...
+        'outputdir'      'string'    { }   fullfile(nemar_path, dsnumber); ...
         }, 'generate_vis');
     if isstr(opt), error(opt); end
 
@@ -23,7 +23,13 @@ function generate_vis(dsnumber, varargin)
     end
 
     % import data
-    [STUDY, ALLEEG, dsname] = load_dataset(opt.bidspath, opt.outputdir);
+    studyFile = fullfile(opt.bidspath, [dsname '.study']);
+    if ~exist(studyFile, 'file') || strcmpi(modeval, 'import')
+        error("Error running visualization script: STUDY not found. Check if the data has finished preprocessing.")
+    else
+        tic
+        [STUDY, ALLEEG] = pop_loadstudy(studyFile);
+    end
 
     % call plot functions
     %ALLEEG = parexec(ALLEEG, 'plot_raw_mid_segment', opt.logdir);
@@ -33,10 +39,11 @@ function generate_vis(dsnumber, varargin)
 
     for i=1:numel(ALLEEG)
         EEG = ALLEEG(i);
+	    EEG = pop_loadset('filepath',EEG.filepath, 'filename', EEG.filename);
         plot_raw_mid_segment(EEG);
         plot_spectra(EEG);
         plot_IC_activation(EEG);
-        plot_ICLabel(EEG);
+        %plot_ICLabel(EEG);
     end
 
     function plot_raw_mid_segment(EEG)
@@ -99,12 +106,22 @@ function generate_vis(dsnumber, varargin)
         outpath = EEG.filepath;
 
         disp('Plotting spectra...');
-        g = finputcheck(varargin, { 'freq'    'integer' []         [6, 10, 22, 60]; ...
+        g = finputcheck(varargin, { 'freq'    'integer' []         [6, 10, 22]; ...
                         'freqrange'   'integer'   []         [1 70]; ...
                         'percent'   'integer'    [], 10});
         % spectopo plot
+        [spec, freqs] = spectopo(EEG.data, 0, EEG.srate, 'freqrange', g.freqrange, 'title', '', 'chanlocs', EEG.chanlocs, 'percent', g.percent,'plot', 'off');
+	[~,ind50]=min(abs(freqs-50));
+	freq_50 = sum(spec(:, ind50));
+	[~,ind60]=min(abs(freqs-60));
+	freq_60 = sum(spec(:, ind60));
+	if freq_50 > freq_60
+	    selected_freqs = [g.freq 50];
+        else
+	    selected_freqs = [g.freq 60];
+    	end
         figure;
-        [spec,~] = spectopo(EEG.data, 0, EEG.srate, 'freq', g.freq, 'freqrange', g.freqrange, 'title', '', 'chanlocs', EEG.chanlocs, 'percent', g.percent,'plot', 'on');
+        [spec,~] = spectopo(EEG.data, 0, EEG.srate, 'freq', selected_freqs, 'freqrange', g.freqrange, 'title', '', 'chanlocs', EEG.chanlocs, 'percent', g.percent,'plot', 'on');
         print(gcf,'-dsvg','-noui',fullfile(EEG.filepath,[ result_basename '_spectopo.svg' ]));
         close
     end
@@ -155,7 +172,7 @@ function generate_vis(dsnumber, varargin)
         % ICLabel plot (temp)
         figure;
         EEG.icawinv = bsxfun(@minus, EEG.icawinv, mean(EEG.icawinv,1));
-        pop_viewprops( EEG, 0, [1:28], {'freqrange', [2 64]}, {}, 1, 'ICLabel', 0.51);
+        pop_viewprops( EEG, 0, [1:35], {'freqrange', [2 64]}, {}, 1, 'ICLabel', 0.51); % remove 0.51
         print(gcf,'-dsvg','-noui',fullfile(outpath,[ result_basename '_icamaps.svg' ]))
         close
     end

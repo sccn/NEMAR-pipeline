@@ -7,6 +7,8 @@
 #SBATCH --no-requeue
 #SBATCH -t 12:00:00
 #SBATCH --ntasks-per-node=1
+#SBATCH --output="prepro.%j.%N.out"
+#SBATCH -e prepro.%j.%N.err
 cd /home/dtyoung/NEMAR-pipeline
 module load matlab
-matlab -nodisplay -r "pipeline('ds003522');"
+matlab -nodisplay -r "bids_preprocess('ds003061');"

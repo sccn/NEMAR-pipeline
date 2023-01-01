@@ -83,7 +83,7 @@ try
 
     % clean data using the clean_rawdata plugin
     options = {'FlatlineCriterion',5,'ChannelCriterion',0.85, ...
-        'LineNoiseCriterion',4,'Highpass',[0.25 0.75] ,'BurstCriterion',20, ...
+        'LineNoiseCriterion',4,'Highpass',[0.75 1.25] ,'BurstCriterion',20, ...
         'WindowCriterion',0.25,'BurstRejection','on','Distance','Euclidian', ...
         'WindowCriterionTolerances',[-Inf 7] ,'fusechanrej',1};
     % ALLEEG = parexec(ALLEEG, 'pop_clean_rawdata', opt.logdir, options{:});
@@ -97,7 +97,9 @@ try
     save_datasets(ALLEEG)
 
     % run ICA reducing the dimention by 1 to account for average reference 
-    options = {'icatype','runica','concatcond','on','options',{'pca',-1}};
+    nChans = [ ALLEEG.nbchan ];
+    lrate = 0.00065/log(mean(nChans))/10;
+    options = {'icatype','runica','concatcond','on','options',{'pca',-1, 'extended', 'on', 'lrate', lrate, 'maxsteps', 2000}};
     % ALLEEG = parexec(ALLEEG, 'pop_runica', opt.logdir, options{:});
     ALLEEG = pop_runica(ALLEEG, options{:});
     save_datasets(ALLEEG)
