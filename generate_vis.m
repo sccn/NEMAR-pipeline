@@ -12,6 +12,7 @@ function generate_vis(dsnumber, varargin)
         'eeglabroot'     'string'    {}    eeglabroot; ...
         'logdir'         'string'    {}    fullfile(nemar_path, 'logs', dsnumber); ...
         'outputdir'      'string'    { }   fullfile(nemar_path, dsnumber); ...
+        'verbose'        'boolean'   {}    false; ...
         }, 'generate_vis');
     if isstr(opt), error(opt); end
 
@@ -23,27 +24,69 @@ function generate_vis(dsnumber, varargin)
     end
 
     % import data
-    studyFile = fullfile(opt.bidspath, [dsname '.study']);
-    if ~exist(studyFile, 'file') || strcmpi(modeval, 'import')
+    studyFile = fullfile(opt.bidspath, [dsnumber '.study']);
+    if ~exist(studyFile, 'file')
         error("Error running visualization script: STUDY not found. Check if the data has finished preprocessing.")
     else
         tic
         [STUDY, ALLEEG] = pop_loadstudy(studyFile);
     end
 
-    % call plot functions
-    %ALLEEG = parexec(ALLEEG, 'plot_raw_mid_segment', opt.logdir);
-    %ALLEEG = parexec(ALLEEG, 'plot_spectra', opt.logdir);
-    %ALLEEG = parexec(ALLEEG, 'plot_IC_activation', opt.logdir);
-    %ALLEEG = parexec(ALLEEG, 'plot_ICLabel', opt.logdir);
+    status_file = fullfile(opt.logdir, 'pipeline_status.csv');
+    % enable logging to file
+    diary(fullfile(opt.logdir, 'matlab_log'));
+    disp("Generating visualization...");
 
-    for i=1:numel(ALLEEG)
-        EEG = ALLEEG(i);
-	    EEG = pop_loadset('filepath',EEG.filepath, 'filename', EEG.filename);
-        plot_raw_mid_segment(EEG);
-        plot_spectra(EEG);
-        plot_IC_activation(EEG);
-        %plot_ICLabel(EEG);
+    if ~exist(status_file,'file')
+        error("Log file not detected. Have you run preprocessing?")
+    else
+        status_tbl = readtable(status_file)
+    end
+
+    try
+        status_tbl.midraw(strcmp(status_tbl.dsnumber,dsnumber)) = false;
+        for i=1:numel(ALLEEG)
+            EEG = ALLEEG(i);
+            EEG = pop_loadset('filepath',EEG.filepath, 'filename', EEG.filename);
+
+            plot_raw_mid_segment(EEG);
+        end
+        status_tbl.midraw(strcmp(status_tbl.dsnumber,dsnumber)) = true;
+            
+        status_tbl.spectra(strcmp(status_tbl.dsnumber,dsnumber)) = false;
+        for i=1:numel(ALLEEG)
+            EEG = ALLEEG(i);
+            EEG = pop_loadset('filepath',EEG.filepath, 'filename', EEG.filename);
+
+            plot_spectra(EEG);
+        end
+        status_tbl.spectra(strcmp(status_tbl.dsnumber,dsnumber)) = true;
+
+        status_tbl.icact(strcmp(status_tbl.dsnumber,dsnumber)) = false;
+        for i=1:numel(ALLEEG)
+            EEG = ALLEEG(i);
+            EEG = pop_loadset('filepath',EEG.filepath, 'filename', EEG.filename);
+
+            plot_IC_activation(EEG);
+        end
+        status_tbl.icact(strcmp(status_tbl.dsnumber,dsnumber)) = true;
+
+        status_tbl.icmap(strcmp(status_tbl.dsnumber,dsnumber)) = false;
+        for i=1:numel(ALLEEG)
+            EEG = ALLEEG(i);
+            EEG = pop_loadset('filepath',EEG.filepath, 'filename', EEG.filename);
+
+            plot_ICLabel(EEG);
+        end
+        status_tbl.icmap(strcmp(status_tbl.dsnumber,dsnumber)) = true;
+
+        writetable(status_tbl, fullfile(opt.logdir, 'pipeline_status.csv'));
+        disp(status_tbl)
+    catch ME
+        writetable(status_tbl, fullfile(opt.logdir, 'pipeline_status.csv'));
+        disp(status_tbl)
+
+        error('%s\n%s',ME.identifier, ME.getReport());
     end
 
     function plot_raw_mid_segment(EEG)
