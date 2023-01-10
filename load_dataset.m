@@ -13,12 +13,12 @@ function [STUDY, ALLEEG, dsname] = load_dataset(filepath, outputDir)
 
     % read or import data
     %pop_editoptions( 'option_storedisk', 1);
-    useBidsChans = { 'ds002718' 'ds003190' 'ds002578' 'ds002887' 'ds003004' 'ds002833' 'ds002691' 'ds002791' 'ds001787' 'ds003474', 'ds003645' };
+    useBidsChans = { 'ds002718' 'ds003190' 'ds002578' 'ds002887' 'ds003004' 'ds002833' 'ds002691' 'ds002791' 'ds001787' 'ds003474' };
     studyFile = fullfile(outputDir, [dsname '.study']);
     if ~exist(studyFile, 'file') || strcmpi(modeval, 'import')
         if ismember(dsname, useBidsChans), bidsChan = 'on'; else bidsChan = 'off'; end
         disp(['bidsChan ' bidsChan]);
-        [STUDY, ALLEEG] = pop_importbids(filepath, 'bidsevent','off','bidschanloc', 'on','studyName',dsname,'outputdir', outputDir);
+        [STUDY, ALLEEG] = pop_importbids(filepath, 'bidsevent','off','bidschanloc', bidsChan,'studyName',dsname,'outputdir', outputDir);
     else
         tic
         [STUDY, ALLEEG] = pop_loadstudy(studyFile);
