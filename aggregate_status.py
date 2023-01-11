@@ -3,6 +3,7 @@ import os
 
 processed_dir = "/expanse/projects/nemar/openneuro/processed" # "/expanse/projects/nemar/dtyoung/NEMAR-pipeline/temp/processed" # "/data/qumulo/dtyoung/NEMAR-pipeline/temp/processed"
 final_file = "/expanse/projects/nemar/openneuro/processed/logs/pipeline_status_all.csv" #"/expanse/projects/nemar/dtyoung/NEMAR-pipeline/temp/processed/pipeline_status_all.csv"
+final_file_html = "/expanse/projects/nemar/openneuro/processed/logs/pipeline_status_all.html" #"/expanse/projects/nemar/dtyoung/NEMAR-pipeline/temp/processed/pipeline_status_all.csv"
 frames = []
 for f in os.listdir(processed_dir):
     path = os.path.join(processed_dir, f)
@@ -15,3 +16,5 @@ for f in os.listdir(processed_dir):
 final_df = pd.concat(frames)
 with open(final_file, 'w') as out:
     final_df.to_csv(out, index=False)
+with open(final_file_html, 'w') as out:
+    final_df.to_html(out, index=False)
