@@ -11,13 +11,10 @@ end
 opt = finputcheck(varargin, { ...
     'bidspath'       'string'    {}    fullfile(nemar_path, dsnumber);  ...
     'eeglabroot'     'string'    {}    eeglabroot; ...
-    'logdir'         'string'    {}    fullfile(nemar_path, 'processed', 'logs', dsnumber); ...
+    'logdir'         'string'    {}    fullfile(nemar_path, 'processed', dsnumber, 'logs'); ...
     'outputdir'      'string'    { }   fullfile(nemar_path, 'processed', dsnumber); ...
-    'remove_chan'    'boolean'   {}    true; ...
-    'avg_ref'        'boolean'   {}    true; ...
-    'cleanraw'       'boolean'   {}    false; ...
-    'runica'         'boolean'   {}    false; ...
-    'iclabel'        'boolean'   {}    false; ...
+    'debug'          'struct'    {}    struct([]);    ... % if not empty, provide the ALLEEG array to debug on
+    'pipeline'       'cell'      {}    {};    ...
     'verbose'        'boolean'   {}    false; ...
     }, 'bids_preprocess');
 if isstr(opt), error(opt); end
@@ -32,151 +29,63 @@ if ~strcmp(eeglabroot, opt.eeglabroot)
     end
 end
 
-if ~exist(fullfile(opt.bidspath,'dataset_description.json'), 'file')
-    error('Dataset description file not found');
-end
 
 if ~exist(opt.logdir, 'dir')
     status = mkdir(opt.logdir);
     if ~status
         error('Could not create log directory');
     end
+    mkdir(fullfile(opt.logdir, 'debug'));
 end
-
 status_file = fullfile(opt.logdir, 'pipeline_status.csv');
 % enable logging to file
-diary(fullfile(opt.logdir, 'matlab_log'));
-if ~exist(status_file,'file')
-    fid = fopen(status_file, 'w');
-    fclose(fid);
-    cols = ["dsnumber", "imported", "chanremoved", "avg_ref" , "cleanraw", "runica", "iclabel", "midraw", "spectra", "icact", "icmap", "dataqual"];
-    col_types = ["string", "logical", "logical",   "logical", "logical", "logical", "logical", "logical", "logical", "logical", "logical", "logical"];
-    status_tbl = table('Size', [0 numel(cols)], 'VariableTypes', col_types, 'VariableNames', cols);
-    init_vals = [{dsnumber}, arrayfun(@(x) x, repelem(false, numel(cols)-1), 'UniformOutput', false)];
-    if opt.verbose
-        fprintf("Status file: (ncols - %d, nvals - %d)\n", numel(cols), numel(init_vals));
-    end
-    status_tbl = [status_tbl; init_vals];
-else
-    status_tbl = readtable(status_file)
+log_file = fullfile(opt.logdir, 'matlab_log');
+if exist(log_file, 'file')
+    delete(log_file)
 end
+diary(log_file);
 
-% import data
-pop_editoptions( 'option_storedisk', 1);
-[STUDY, ALLEEG, dsname] = load_dataset(opt.bidspath, opt.outputdir);
-status_tbl.imported(strcmp(status_tbl.dsnumber,dsname)) = true;
+if isempty(opt.debug)
+    if ~exist(fullfile(opt.bidspath,'dataset_description.json'), 'file')
+        error('Dataset description file not found');
+    end
+    % import data
+    pop_editoptions( 'option_storedisk', 1);
+    [STUDY, ALLEEG, dsname] = load_dataset(opt.bidspath, opt.outputdir);
+else
+    ALLEEG = opt.debug;
+end
 
 if opt.verbose
     disp('Check channel location after importing\n');
     ALLEEG(1).chanlocs(1)
 end
 
-options = {};
-try
-    if opt.remove_chan
-        status_tbl.chanremoved(strcmp(status_tbl.dsnumber,dsname)) = false;
-        % % remove non-ALLEEG channels (it is also possible to process ALLEEG data with non-ALLEEG data
-        % get non-EEG channels
-        % keep only EEG channels
-        rm_chan_types = {'AUDIO','MEG','EOG','ECG','EMG','EYEGAZE','GSR','HEOG','MISC','PPG','PUPIL','REF','RESP','SYSCLOCK','TEMP','TRIG','VEOG'};
-        if isfield(ALLEEG(1).chanlocs, 'type')
-            ALLEEG = pop_select(ALLEEG, 'rmchantype', rm_chan_types);
-            types = {ALLEEG(1).chanlocs.type};
-            eeg_indices = strmatch('EEG', types)';
-            if opt.verbose
-                disp('Remaining channel types');
-                types
-                disp('Indices of EEG channels');
-                eeg_indices
-                disp('Size of chaninfo');
-                ALLEEG(1).chanlocs
-            end
-            if ~isempty(eeg_indices)
-                ALLEEG = pop_select(ALLEEG, 'chantype', 'EEG');
-            else
-                warning("No EEG channel type detected (for first EEG file). Keeping all channels");
-            end
-        else
-            warning("Channel type not detected (for first EEG file)");
-        end
-        % ALLEEG = pop_select( ALLEEG,'nochannel',{'VEOG', 'Misc', 'ECG', 'M2'});
-
-        if isfield(ALLEEG(1).chanlocs, 'theta')
-            thetas = [ALLEEG(1).chanlocs.theta];
-            if isempty(thetas)
-                warning("No channel locations detected (for first EEG file)");
-            end
-        end
-        status_tbl.chanremoved(strcmp(status_tbl.dsnumber,dsname)) = true;
-    end
-
-    if opt.avg_ref
-        status_tbl.avg_ref(strcmp(status_tbl.dsnumber,dsname)) = false;
-        % % compute average reference
-        options = {[]};
-        ALLEEG = pop_reref( ALLEEG,options{:});
-        status_tbl.avg_ref(strcmp(status_tbl.dsnumber,dsname)) = true;
-    end
-
-    if opt.cleanraw
-        status_tbl.cleanraw(strcmp(status_tbl.dsnumber,dsname)) = false;
-        % clean data using the clean_rawdata plugin
-        options = {'FlatlineCriterion',5,'ChannelCriterion',0.85, ...
-            'LineNoiseCriterion',4,'Highpass',[0.75 1.25] ,'BurstCriterion',20, ...
-            'WindowCriterion',0.25,'BurstRejection','on','Distance','Euclidian', ...
-            'WindowCriterionTolerances',[-Inf 7] ,'fusechanrej',1};
-        % ALLEEG = parexec(ALLEEG, 'pop_clean_rawdata', opt.logdir, options{:});
-        ALLEEG = pop_clean_rawdata( ALLEEG, options{:});
-        save_datasets(ALLEEG)
-
-        % recompute average reference interpolating missing channels (and removing
-        % them again after average reference - STUDY functions handle them automatically)
-        options = {[], 'interpchan', []}
-        ALLEEG = pop_reref( ALLEEG,options{:});
-        save_datasets(ALLEEG)
-        status_tbl.cleanraw(strcmp(status_tbl.dsnumber,dsname)) = true;
-    end
-
-    if opt.runica
-        status_tbl.runica(strcmp(status_tbl.dsnumber,dsname)) = false;
-        % run ICA reducing the dimention by 1 to account for average reference 
-        nChans = [ ALLEEG.nbchan ];
-        lrate = 0.00065/log(mean(nChans))/10;
-        options = {'icatype','runica','concatcond','on', 'pca',-1, 'extended', 1, 'lrate', lrate, 'maxsteps', 2000};
-        % ALLEEG = parexec(ALLEEG, 'pop_runica', opt.logdir, options{:});
-        ALLEEG = pop_runica(ALLEEG, options{:});
-        save_datasets(ALLEEG);
-        status_tbl.runica(strcmp(status_tbl.dsnumber,dsname)) = true;
-    end
-
-    if opt.iclabel
-        status_tbl.iclabel(strcmp(status_tbl.dsnumber,dsname)) = false;
-        % % run ICLabel and flag artifactual components
-        options = {'default'};
-        ALLEEG = pop_iclabel(ALLEEG, options{:});
-        options = {[NaN NaN;0.9 1;0.9 1;NaN NaN;NaN NaN;NaN NaN;NaN NaN]};
-        ALLEEG = pop_icflag( ALLEEG, options{:});
-        save_datasets(ALLEEG);
-        status_tbl.iclabel(strcmp(status_tbl.dsnumber,dsname)) = true;
-    end
-
-    writetable(status_tbl, fullfile(opt.logdir, 'pipeline_status.csv'));
-    disp(status_tbl)
-    % pop_editoptions( 'option_storedisk', 1); % only one dataset at a time
-catch ME
-    save(sprintf('%s/ALLEEG_%s_%s.mat', opt.logdir, ME.identifier, char(datetime('now','TimeZone','local','Format','d-MMM-y-HHmmss'))), 'ALLEEG');
-    save(sprintf('%s/options_%s_%s.mat', opt.logdir, ME.identifier, char(datetime('now','TimeZone','local','Format','d-MMM-y-HHmmss'))), 'options');
-    writetable(status_tbl, fullfile(opt.logdir, 'pipeline_status.csv'));
-    disp(status_tbl)
-
-    error('%s\n%s',ME.identifier, ME.getReport());
+if isempty(opt.pipeline)
+    pipeline = {'remove_chan', 'cleanraw', 'avg_ref', 'runica', 'iclabel'};
+else
+    pipeline = opt.pipeline;
+end
+status = zeros(numel(ALLEEG), numel(pipeline));
+parfor i=1:numel(ALLEEG)
+    EEG = pop_loadset('filepath', ALLEEG(i).filepath, 'filename', ALLEEG(i).filename);
+    [~, status(i,:)] = eeg_nemar_preprocess(EEG, i, pipeline, opt.logdir);
 end
 
+status_cols = ["dsnumber", pipeline];
+col_types = repelem("string", numel(status_cols));
+status_tbl = table('Size', [0 numel(status_cols)], 'VariableTypes', col_types, 'VariableNames', status_cols);
+vals = [{dsnumber}, arrayfun(@(i) sprintf("%d/%d", sum(status(i), 1), numel(ALLEEG)), 1:size(status,2), 'UniformOutput', false)];
+status_tbl = [status_tbl; vals];
+writetable(status_tbl, status_file);
+
+fid = fopen(fullfile(opt.logdir, 'error_files.txt'),'w');
+for i=1:size(status,1)
+    if sum(status(i,:)) == 0
+        fprintf(fid, '%s\n', fullfile(ALLEEG(i).filepath, ALLEEG(i).filename));
+    end
+end
+fclose(fid);
 diary off
 
-function save_datasets(ALLEEG)
-    for i=1:numel(ALLEEG)
-        pop_saveset(ALLEEG(i), 'filepath', ALLEEG(i).filepath, 'filename', ALLEEG(i).filename);
-    end
-end
 end
