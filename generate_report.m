@@ -1,5 +1,5 @@
 function generate_report(dsnumber, varargin)
-    nemar_path = '/expanse/projects/nemar/openneuro';
+    nemar_path = '/expanse/projects/nemar/openneuro/processed';
     eeglabroot = '/expanse/projects/nemar/dtyoung/NEMAR-pipeline';
     addpath(fullfile(eeglabroot,'eeglab'));
     addpath(fullfile(eeglabroot,'JSONio'));
@@ -7,8 +7,7 @@ function generate_report(dsnumber, varargin)
     opt = finputcheck(varargin, { ...
         'bidspath'       'string'    {}    fullfile(nemar_path, dsnumber);  ...
         'eeglabroot'     'string'    {}    eeglabroot; ...
-        'logdir'         'string'    {}    fullfile(nemar_path, 'logs', dsnumber); ...
-        'outputdir'      'string'    { }   fullfile(nemar_path, dsnumber); ...
+        'logdir'         'string'    {}    fullfile(nemar_path, dsnumber, 'logs'); ...
         'verbose'        'boolean'   {}    false; ...
         }, 'generate_report');
     if isstr(opt), error(opt); end
@@ -23,7 +22,7 @@ function generate_report(dsnumber, varargin)
     % load data
     studyFile = fullfile(opt.bidspath, [dsnumber '.study']);
     if exist(studyFile, 'file')
-	[STUDY, ALLEEG] = pop_loadstudy(studyFile);
+	    [STUDY, ALLEEG] = pop_loadstudy(studyFile);
     else
         error('Dataset has not been imported');
     end
