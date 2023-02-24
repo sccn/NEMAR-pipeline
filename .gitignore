@@ -1,4 +1,7 @@
-eeglab/
+eeglab/*
 plugins/
 temp/
 ds002718/
+ds*/
+processed-*
+HED/hed_python/

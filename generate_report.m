@@ -1,4 +1,4 @@
-function status = generate_report(ALLEEG, opt)
+function status = generate_report(ALLEEG, opt, eeg_logdir)
     status = zeros(numel(ALLEEG), 1);
     goodDataPs = zeros(numel(ALLEEG),1);
     goodChanPs = zeros(numel(ALLEEG),1);
@@ -7,7 +7,7 @@ function status = generate_report(ALLEEG, opt)
         EEG = ALLEEG(i);
 
         [filepath, filename, ext] = fileparts(EEG.filename);
-        log_file = fullfile(opt.logdir, filename);
+        log_file = fullfile(eeg_logdir, filename);
 
         diary(log_file);
         try
