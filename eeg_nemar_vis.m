@@ -1,92 +1,41 @@
-function generate_vis(dsnumber, varargin)
-    nemar_path = '/expanse/projects/nemar/openneuro/processed';
-    eeglabroot = '/expanse/projects/nemar/dtyoung/NEMAR-pipeline';
+function [EEG, status] = eeg_nemar_vis(EEG, plots, logdir)
+    [filepath, filename, ext] = fileparts(EEG.filename);
+    log_file = fullfile(logdir, filename);
 
-    if isempty(which('finputcheck'))
-        addpath(fullfile(eeglabroot,'eeglab'));
-        addpath(fullfile(eeglabroot,'JSONio'));
-        eeglab nogui;
+    diary(log_file);
+    if isempty(plots)
+        error('No plots were requested')
     end
-    opt = finputcheck(varargin, { ...
-        'bidspath'       'string'    {}    fullfile(nemar_path, dsnumber);  ...
-        'eeglabroot'     'string'    {}    eeglabroot; ...
-        'logdir'         'string'    {}    fullfile(nemar_path, dsnumber, 'logs'); ...
-        'verbose'        'boolean'   {}    false; ...
-        }, 'generate_vis');
-    if isstr(opt), error(opt); end
+    fprintf('Generating plots for %s\n', fullfile(EEG.filepath, EEG.filename));
+    status = zeros(1, numel(plots));
 
-    % reload eeglab if different version specified
-    if ~strcmp(eeglabroot, opt.eeglabroot)
-        addpath(fullfile(opt.eeglabroot,'eeglab'));
-        addpath(fullfile(opt.eeglabroot,'JSONio'));
-        eeglab nogui;
-    end
-
-    % import data
-    studyFile = fullfile(opt.bidspath, [dsnumber '.study']);
-    if ~exist(studyFile, 'file')
-        error("Error running visualization script: STUDY not found. Check if the data has finished preprocessing.")
-    else
-        tic
-        [STUDY, ALLEEG] = pop_loadstudy(studyFile);
-    end
-
-    status_file = fullfile(opt.logdir, 'pipeline_status.csv');
-    % enable logging to file
-    diary(fullfile(opt.logdir, 'matlab_log'));
-    disp("Generating visualization...");
-
-    if ~exist(status_file,'file')
-        error("Log file not detected. Have you run preprocessing?")
-    else
-        status_tbl = readtable(status_file)
-    end
+    fprintf('Plots: %s\n', strjoin(plots, ', '));
 
     try
-        status_tbl.midraw(strcmp(status_tbl.dsnumber,dsnumber)) = false;
-        for i=1:numel(ALLEEG)
-            EEG = ALLEEG(i);
-            EEG = pop_loadset('filepath',EEG.filepath, 'filename', EEG.filename);
+        for i=1:numel(plots)
+            plot = plots{i};
+            if strcmp(plot, 'midraw')
+                plot_raw_mid_segment(EEG);
+            end
+                
+            if strcmp(plot, 'spectra')
+                plot_spectra(EEG);
+            end
 
-            plot_raw_mid_segment(EEG);
+            if strcmp(plot, 'icaact')
+                EEG.icaact = bsxfun(@rdivide, bsxfun(@minus, EEG.icaact, mean(EEG.icaact,2)), std(EEG.icaact, [], 2)); % normalize data to be same scale
+                plot_IC_activation(EEG);
+            end
+
+            if strcmp(plot, 'icmap')
+                plot_ICLabel(EEG);
+            end
+            status(i) = 1;
         end
-        status_tbl.midraw(strcmp(status_tbl.dsnumber,dsnumber)) = true;
-            
-        status_tbl.spectra(strcmp(status_tbl.dsnumber,dsnumber)) = false;
-        for i=1:numel(ALLEEG)
-            EEG = ALLEEG(i);
-            EEG = pop_loadset('filepath',EEG.filepath, 'filename', EEG.filename);
-
-            plot_spectra(EEG);
-        end
-        status_tbl.spectra(strcmp(status_tbl.dsnumber,dsnumber)) = true;
-
-        status_tbl.icact(strcmp(status_tbl.dsnumber,dsnumber)) = false;
-        for i=1:numel(ALLEEG)
-            EEG = ALLEEG(i);
-            EEG = pop_loadset('filepath',EEG.filepath, 'filename', EEG.filename);
-            EEG.icaact = bsxfun(@rdivide, bsxfun(@minus, EEG.icaact, mean(EEG.icaact,2)), std(EEG.icaact, [], 2)); % normalize data to be same scale
-            plot_IC_activation(EEG);
-        end
-        status_tbl.icact(strcmp(status_tbl.dsnumber,dsnumber)) = true;
-
-        status_tbl.icmap(strcmp(status_tbl.dsnumber,dsnumber)) = false;
-        for i=1:numel(ALLEEG)
-            EEG = ALLEEG(i);
-            EEG = pop_loadset('filepath',EEG.filepath, 'filename', EEG.filename);
-
-            plot_ICLabel(EEG);
-        end
-        status_tbl.icmap(strcmp(status_tbl.dsnumber,dsnumber)) = true;
-
-        writetable(status_tbl, fullfile(opt.logdir, 'pipeline_status.csv'));
-        disp(status_tbl)
     catch ME
-        writetable(status_tbl, fullfile(opt.logdir, 'pipeline_status.csv'));
-        disp(status_tbl)
-
-        error('%s\n%s',ME.identifier, ME.getReport());
+        fprintf('%s\n%s\n',ME.identifier, ME.getReport());
     end
+    diary off
 
     function plot_raw_mid_segment(EEG)
         result_basename = EEG.filename(1:end-4); % for plots

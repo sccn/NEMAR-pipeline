@@ -1,11 +1,10 @@
-function [EEG, status] = eeg_nemar_preprocess(EEG, eeg_idx, pipeline, logdir)
-    % default pipeline sequence
-    % pipeline = {'remove_chan', 'cleanraw', 'avg_ref', 'runica', 'iclabel'};
+function [EEG, status] = eeg_nemar_preprocess(EEG, pipeline, logdir)
     [filepath, filename, ext] = fileparts(EEG.filename);
     log_file = fullfile(logdir, filename);
     if exist(log_file, 'file')
         delete(log_file)
     end
+
     diary(log_file);
     fprintf('Processing %s\n', fullfile(EEG.filepath, EEG.filename));
     if isempty(pipeline)
@@ -15,7 +14,6 @@ function [EEG, status] = eeg_nemar_preprocess(EEG, eeg_idx, pipeline, logdir)
 
     fprintf('Running pipeline sequence %s\n', strjoin(pipeline, '->'));
     try
-        error('test')
         for i=1:numel(pipeline)
             operation = pipeline{i};
             if strcmp(operation, "remove_chan")
