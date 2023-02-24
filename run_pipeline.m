@@ -13,6 +13,7 @@ opt = finputcheck(varargin, { ...
     'eeglabroot'     'string'    {}    eeglabroot; ...
     'outputdir'      'string'    { }   fullfile(nemar_path, 'processed', dsnumber); ...
     'logdir'         'string'    {}    fullfile(nemar_path, 'processed', dsnumber, 'logs'); ...
+    'modeval'        'string'    {}    'import'; ...
     'preprocess'     'boolean'   {}    true; ...
     'vis'            'boolean'   {}    true; ...
     'dataqual'       'boolean'   {}    true; ...
@@ -30,31 +31,35 @@ if ~strcmp(eeglabroot, opt.eeglabroot)
     end
 end
 
+% create output directories
+if exist(opt.outputdir, 'dir')
+    rmdir(opt.outputdir, 's');
+end
+status = mkdir(opt.outputdir);
+if ~status
+    error('Could not create output directory');
+else
+    disp("Output directory created");
+end
+
+% create log dirs
+if exist(opt.logdir, 'dir')
+    rmdir(opt.logdir, 's')
+end
+status = mkdir(opt.logdir);
+if ~status
+    error('Could not create log directory');
+end
+mkdir(fullfile(opt.logdir, 'debug'));
+mkdir(fullfile(opt.logdir, 'eeg_logs'));
+eeg_logdir = fullfile(opt.logdir, 'eeg_logs');
+
 % enable logging to file
 log_file = fullfile(opt.logdir, 'matlab_log');
 if exist(log_file, 'file')
     delete(log_file)
 end
 diary(log_file);
-
-% create output directories
-if exist(opt.outputdir, 'dir')
-    delete(opt.outputdir);
-end
-status = mkdir(opt.outputdir);
-if ~status
-    error('Could not create output directory');
-    els
-    disp("Output directory created");
-end
-
-if ~exist(opt.logdir, 'dir')
-    status = mkdir(opt.logdir);
-    if ~status
-        error('Could not create log directory');
-    end
-    mkdir(fullfile(opt.logdir, 'debug'));
-end
 
 if opt.verbose
     disp("Creating code dir and copying pipeline code");
@@ -68,26 +73,26 @@ copyfile(fullfile(eeglabroot, 'eeg_nemar_vis.m'), codeDir);
 copyfile(fullfile(eeglabroot, 'generate_report.m'), codeDir);
 copyfile(fullfile('/expanse/projects/nemar/openneuro/processed/logs', [dsnumber 'sbatch']), codeDir);
 
-
 % import data
 if ~exist(fullfile(opt.bidspath,'dataset_description.json'), 'file')
     error('Dataset description file not found');
 end
 pop_editoptions( 'option_storedisk', 1);
-[STUDY, ALLEEG, dsname] = load_dataset(opt.bidspath, opt.outputdir);
+[STUDY, ALLEEG, dsname] = load_dataset(opt.bidspath, opt.outputdir, opt.modeval);
 
 if opt.verbose
     disp('Check channel location after importing\n');
     ALLEEG(1).chanlocs(1)
 end
 
+parpool([1 128]); % debug 1, compute 128 per node
 % preprocessing
 pipeline = {'remove_chan', 'cleanraw', 'avg_ref', 'runica', 'iclabel'};
 preproc_status = zeros(numel(ALLEEG), numel(pipeline));
 if opt.preprocess
     parfor i=1:numel(ALLEEG)
         EEG = pop_loadset('filepath', ALLEEG(i).filepath, 'filename', ALLEEG(i).filename);
-        [~, preproc_status(i,:)] = eeg_nemar_preprocess(EEG, pipeline, opt.logdir);
+        [~, preproc_status(i,:)] = eeg_nemar_preprocess(EEG, pipeline, eeg_logdir);
     end
     save(fullfile(opt.logdir, 'preproc_status.mat'), 'preproc_status');
 end
@@ -98,7 +103,7 @@ vis_status = zeros(numel(ALLEEG), numel(plots));
 if opt.vis
     parfor i=1:numel(ALLEEG)
         EEG = pop_loadset('filepath', ALLEEG(i).filepath, 'filename', ALLEEG(i).filename);
-        [~, vis_status(i,:)] = eeg_nemar_vis(EEG, plots, opt.logdir);
+        [~, vis_status(i,:)] = eeg_nemar_vis(EEG, plots, eeg_logdir);
     end
     save(fullfile(opt.logdir, 'vis_status.mat'), 'vis_status');
 end
@@ -106,7 +111,7 @@ end
 % data quality
 dataqual_status = zeros(numel(ALLEEG), 1);
 if opt.dataqual
-    dataqual_status = generate_report(ALLEEG, opt);
+    dataqual_status = generate_report(ALLEEG, opt, eeg_logdir);
     save(fullfile(opt.logdir, 'dataqual_status.mat'), 'dataqual_status');
 end
 

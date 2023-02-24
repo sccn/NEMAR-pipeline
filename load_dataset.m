@@ -1,10 +1,8 @@
-function [STUDY, ALLEEG, dsname] = load_dataset(filepath, outputDir)
+function [STUDY, ALLEEG, dsname] = load_dataset(filepath, outputDir, modeval)
     % check EEGLAB environment
     if plugin_status('bids-matlab-tools') == 0
         error('BIDS-MATLAB-TOOLS plugin is not installed. Please install it before using this function.');
     end
-
-    modeval = 'read';
 
     % set up output path
     [root_dir,dsname] = fileparts(filepath);
