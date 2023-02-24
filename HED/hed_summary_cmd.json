@@ -1,0 +1,16 @@
+[{
+   "operation": "summarize_hed_tags",
+   "description": "Summarize the HED tags in the dataset.",
+   "parameters": {
+       "summary_name": "hed_tag_summary",
+       "summary_filename": "hed_tag_summary",
+       "tags": {
+           "Sensory events": ["Sensory-event", "Sensory-presentation",
+                              "Task-stimulus-role", "Experimental-stimulus"],
+           "Agent actions": ["Agent-action", "Agent", "Action", "Agent-task-role",
+                             "Task-action-type", "Participant-response"],
+           "Objects": ["Item"]
+         },
+       "expand_context": false
+     }
+}]
