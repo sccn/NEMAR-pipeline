@@ -1,14 +1,14 @@
 #!/bin/bash
-
+#SBATCH -J ds003645
 #SBATCH --partition=compute
 #SBATCH --nodes=1
 #SBATCH --mem=128G
 #SBATCH --account=csd403
 #SBATCH --no-requeue
-#SBATCH -t 12:00:00
+#SBATCH -t 24:00:00
 #SBATCH --ntasks-per-node=1
-#SBATCH --output="prepro.%j.%N.out"
-#SBATCH -e prepro.%j.%N.err
+#SBATCH --output="/expanse/projects/nemar/openneuro/processed/logs/ds003645.out"
+#SBATCH -e /expanse/projects/nemar/openneuro/processed/logs/ds003645.err
 cd /home/dtyoung/NEMAR-pipeline
 module load matlab
-matlab -nodisplay -r "bids_preprocess('ds003061');"
+matlab -nodisplay -r "run_pipeline('ds003645');"
