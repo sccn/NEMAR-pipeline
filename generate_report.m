@@ -1,50 +1,17 @@
-function generate_report(dsnumber, varargin)
-    nemar_path = '/expanse/projects/nemar/openneuro/processed';
-    eeglabroot = '/expanse/projects/nemar/dtyoung/NEMAR-pipeline';
-    addpath(fullfile(eeglabroot,'eeglab'));
-    addpath(fullfile(eeglabroot,'JSONio'));
-    eeglab nogui;
-    opt = finputcheck(varargin, { ...
-        'bidspath'       'string'    {}    fullfile(nemar_path, dsnumber);  ...
-        'eeglabroot'     'string'    {}    eeglabroot; ...
-        'logdir'         'string'    {}    fullfile(nemar_path, dsnumber, 'logs'); ...
-        'verbose'        'boolean'   {}    false; ...
-        }, 'generate_report');
-    if isstr(opt), error(opt); end
+function status = generate_report(ALLEEG, opt)
+    status = zeros(numel(ALLEEG), 1);
+    goodDataPs = [];
+    goodChanPs = [];
+    goodICPs = [];
+    for i=1:numel(ALLEEG)
+        EEG = ALLEEG(i);
 
-    % reload eeglab if different version specified
-    if ~strcmp(eeglabroot, opt.eeglabroot)
-        addpath(fullfile(opt.eeglabroot,'eeglab'));
-        addpath(fullfile(opt.eeglabroot,'JSONio'));
-        eeglab nogui;
-    end
+        [filepath, filename, ext] = fileparts(EEG.filename);
+        log_file = fullfile(opt.logdir, filename);
 
-    % load data
-    studyFile = fullfile(opt.bidspath, [dsnumber '.study']);
-    if exist(studyFile, 'file')
-	    [STUDY, ALLEEG] = pop_loadstudy(studyFile);
-    else
-        error('Dataset has not been imported');
-    end
-
-    status_file = fullfile(opt.logdir, 'pipeline_status.csv');
-    % enable logging to file
-    diary(fullfile(opt.logdir, 'matlab_log'));
-    disp("Generating data quality report...");
-
-    if ~exist(status_file,'file')
-        error("Log file not detected. Have you run preprocessing?")
-    else
-        status_tbl = readtable(status_file)
-    end
-
-    try
-        status_tbl.dataqual(strcmp(status_tbl.dsnumber,dsnumber)) = false;
-        goodDataPs = [];
-        goodChanPs = [];
-        goodICPs = [];
-        for i=1:numel(ALLEEG)
-            EEG = ALLEEG(i);
+        try
+            diary(log_file);
+            fprintf('Generating reports for %s\n', fullfile(EEG.filepath, EEG.filename));
             report_file = fullfile(EEG.filepath, [EEG.filename(1:end-4) '_dataqual.json']);
             fid = fopen(report_file,'w');
             fprintf(fid,'{}');
@@ -56,9 +23,18 @@ function generate_report(dsnumber, varargin)
             goodDataPs = [goodDataPs dataP];
             goodChanPs = [goodChanPs chanP];
             goodICPs = [goodICPs icaP];
+
+            status(i) = 1;
+            diary off
+        catch ME
+            fprintf('%s\n%s\n',ME.identifier, ME.getReport());
+            diary off
         end
 
-        % dataset level report
+    end
+
+    % dataset level report
+    if ~isempty(goodDataPs)
         report_file = fullfile(opt.bidspath, 'dataqual.json');
         fid = fopen(report_file,'w');
         fprintf(fid,'{}');
@@ -71,16 +47,6 @@ function generate_report(dsnumber, varargin)
         cur_report.goodICAPercentMin = min(goodICPs);
         cur_report.goodICAPercentMax = max(goodICPs);
         jsonwrite(report_file, cur_report);
-
-        status_tbl.dataqual(strcmp(status_tbl.dsnumber,dsnumber)) = true;
-
-        writetable(status_tbl, fullfile(opt.logdir, 'pipeline_status.csv'));
-        disp(status_tbl)
-    catch ME
-        writetable(status_tbl, fullfile(opt.logdir, 'pipeline_status.csv'));
-        disp(status_tbl)
-
-        error('%s\n%s',ME.identifier, ME.getReport());
     end
 
     function [goodDataPercent, goodChanPercent] = cleanraw_report(EEG, report_file)
