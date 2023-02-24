@@ -10,8 +10,7 @@ function generate_vis(dsnumber, varargin)
     opt = finputcheck(varargin, { ...
         'bidspath'       'string'    {}    fullfile(nemar_path, dsnumber);  ...
         'eeglabroot'     'string'    {}    eeglabroot; ...
-        'logdir'         'string'    {}    fullfile(nemar_path, 'logs', dsnumber); ...
-        'outputdir'      'string'    { }   fullfile(nemar_path, dsnumber); ...
+        'logdir'         'string'    {}    fullfile(nemar_path, dsnumber, 'logs'); ...
         'verbose'        'boolean'   {}    false; ...
         }, 'generate_vis');
     if isstr(opt), error(opt); end
@@ -66,7 +65,7 @@ function generate_vis(dsnumber, varargin)
         for i=1:numel(ALLEEG)
             EEG = ALLEEG(i);
             EEG = pop_loadset('filepath',EEG.filepath, 'filename', EEG.filename);
-
+            EEG.icaact = bsxfun(@rdivide, bsxfun(@minus, EEG.icaact, mean(EEG.icaact,2)), std(EEG.icaact, [], 2)); % normalize data to be same scale
             plot_IC_activation(EEG);
         end
         status_tbl.icact(strcmp(status_tbl.dsnumber,dsnumber)) = true;
@@ -154,15 +153,15 @@ function generate_vis(dsnumber, varargin)
                         'percent'   'integer'    [], 10});
         % spectopo plot
         [spec, freqs] = spectopo(EEG.data, 0, EEG.srate, 'freqrange', g.freqrange, 'title', '', 'chanlocs', EEG.chanlocs, 'percent', g.percent,'plot', 'off');
-	[~,ind50]=min(abs(freqs-50));
-	freq_50 = sum(spec(:, ind50));
-	[~,ind60]=min(abs(freqs-60));
-	freq_60 = sum(spec(:, ind60));
-	if freq_50 > freq_60
-	    selected_freqs = [g.freq 50];
+        [~,ind50]=min(abs(freqs-50));
+        freq_50 = sum(spec(:, ind50));
+        [~,ind60]=min(abs(freqs-60));
+        freq_60 = sum(spec(:, ind60));
+        if freq_50 > freq_60
+            selected_freqs = [g.freq 50];
         else
-	    selected_freqs = [g.freq 60];
-    	end
+            selected_freqs = [g.freq 60];
+        end
         figure;
         [spec,~] = spectopo(EEG.data, 0, EEG.srate, 'freq', selected_freqs, 'freqrange', g.freqrange, 'title', '', 'chanlocs', EEG.chanlocs, 'percent', g.percent,'plot', 'on');
         print(gcf,'-dsvg','-noui',fullfile(EEG.filepath,[ result_basename '_spectopo.svg' ]));
@@ -215,7 +214,7 @@ function generate_vis(dsnumber, varargin)
         % ICLabel plot (temp)
         figure;
         EEG.icawinv = bsxfun(@minus, EEG.icawinv, mean(EEG.icawinv,1));
-        pop_viewprops( EEG, 0, [1:35], {'freqrange', [2 64]}, {}, 1, 'ICLabel', 0.51); % remove 0.51
+        pop_viewprops( EEG, 0, [1:35], {'freqrange', [2 64]}, {}, 1, 'ICLabel');
         print(gcf,'-dsvg','-noui',fullfile(outpath,[ result_basename '_icamaps.svg' ]))
         close
     end

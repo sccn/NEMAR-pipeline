@@ -55,11 +55,24 @@ function run_pipeline(dsnumber, varargin)
             disp("Log dir created");
         end
     end
+    
+    if opt.verbose
+        disp("Creating code dir and copying pipeline code");
+    end
+    codeDir = fullfile(opt.logdir, "code");
+    mkdir(codeDir)
+    copyfile(fullfile(eeglabroot, 'load_eeglab.m'), codeDir);
+    copyfile(fullfile(eeglabroot, 'run_pipeline.m'), codeDir);
+    copyfile(fullfile(eeglabroot, 'bids_preprocess.m'), codeDir);
+    copyfile(fullfile(eeglabroot, 'eeg_nemar_preprocess.m'), codeDir);
+    copyfile(fullfile(eeglabroot, 'generate_vis.m'), codeDir);
+    copyfile(fullfile(eeglabroot, 'generate_report.m'), codeDir);
+    copyfile(fullfile('/expanse/projects/nemar/openneuro/processed/logs', [dsnumber 'sbatch']), codeDir);
 
     % enable logging to files
     status_file = fullfile(opt.logdir, 'pipeline_status.csv');
     matlab_log_file = fullfile(opt.logdir, 'matlab_log');
-    if ~exist(matlab_log_file, 'file')
+    if exist(matlab_log_file, 'file')
         delete(matlab_log_file); % clear log file if exist
     end
     diary(matlab_log_file);
@@ -77,8 +90,9 @@ function run_pipeline(dsnumber, varargin)
 
     % call pipeline components
     varargin = {'bidspath', opt.bidspath, 'eeglabroot', opt.eeglabroot, 'logdir', opt.logdir, 'outputdir', opt.outputdir, 'verbose', opt.verbose};
-
     bids_preprocess(dsnumber, varargin{:}, 'remove_chan', true, 'avg_ref', true, 'cleanraw', true, 'runica', true, 'iclabel', true);
+
+    varargin = {'bidspath', opt.outputdir, 'eeglabroot', opt.eeglabroot, 'logdir', opt.logdir, 'verbose', opt.verbose};
     generate_vis(dsnumber, varargin{:});
     generate_report(dsnumber, varargin{:});
 
