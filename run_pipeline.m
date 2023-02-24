@@ -111,6 +111,7 @@ if opt.dataqual
 end
 
 % generate summary status report
+disp('Generating status report');
 preproc_file = fullfile(opt.logdir, 'preproc_status.mat');
 if exist(preproc_file)
     load(preproc_file);
