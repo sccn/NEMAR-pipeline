@@ -7,7 +7,7 @@ echo "#!/bin/bash" > $sbatchfile
 echo "#SBATCH -J $dsnumber" >> $sbatchfile
 echo "#SBATCH --partition=compute" >> $sbatchfile
 echo "#SBATCH --nodes=1" >> $sbatchfile
-echo "#SBATCH --mem=128G" >> $sbatchfile
+echo "#SBATCH --mem=240G" >> $sbatchfile
 echo "#SBATCH -o $path/$dsnumber.out" >> $sbatchfile
 echo "#SBATCH -e $path/$dsnumber.err" >> $sbatchfile
 echo "#SBATCH -t 24:00:00" >> $sbatchfile

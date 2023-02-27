@@ -67,7 +67,6 @@ function [EEG, status] = eeg_nemar_preprocess(EEG, pipeline, logdir)
                 nChans = EEG.nbchan;
                 lrate = 0.00065/log(mean(nChans))/10; % not the runica default - suggested by Makoto approximately 12/22
                 options = {'icatype','runica','concatcond','on', 'pca',-1, 'extended', 1, 'lrate', lrate, 'maxsteps', 2000};
-                % ALLEEG = parexec(ALLEEG, 'pop_runica', opt.logdir, options{:});
                 EEG = pop_runica(EEG, options{:});
             end
 
