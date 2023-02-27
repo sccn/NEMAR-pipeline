@@ -1,9 +1,11 @@
+#!/data/qumulo/dtyoung/NEMAR-pipeline/.conda/envs/web-scrapping/bin/python
+
 import pandas as pd
 import os
 
-processed_dir = "/expanse/projects/nemar/openneuro/processed" # "/expanse/projects/nemar/dtyoung/NEMAR-pipeline/temp/processed" # "/data/qumulo/dtyoung/NEMAR-pipeline/temp/processed"
-final_file = "/expanse/projects/nemar/openneuro/processed/logs/pipeline_status_all.csv" #"/expanse/projects/nemar/dtyoung/NEMAR-pipeline/temp/processed/pipeline_status_all.csv"
-final_file_html = "/expanse/projects/nemar/openneuro/processed/logs/pipeline_status_all.html" #"/expanse/projects/nemar/dtyoung/NEMAR-pipeline/temp/processed/pipeline_status_all.csv"
+processed_dir = "/data/qumulo/openneuro/processed" # "/expanse/projects/nemar/dtyoung/NEMAR-pipeline/temp/processed" # "/data/qumulo/dtyoung/NEMAR-pipeline/temp/processed"
+final_file = "pipeline_status_all.csv" #"/data/qumulo/openneuro/processed/logs/pipeline_status_all.csv" #"/expanse/projects/nemar/dtyoung/NEMAR-pipeline/temp/processed/pipeline_status_all.csv"
+final_file_html = "pipeline_status_all.html" #"/data/qumulo/openneuro/processed/logs/pipeline_status_all.html" 
 frames = []
 for f in os.listdir(processed_dir):
     path = os.path.join(processed_dir, f)

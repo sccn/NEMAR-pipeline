@@ -32,6 +32,9 @@ if ~strcmp(eeglabroot, opt.eeglabroot)
 end
 
 % create output directories
+if opt.verbose
+    fprintf('Output dir: %s\n', opt.outputdir);
+end
 if exist(opt.outputdir, 'dir')
     rmdir(opt.outputdir, 's');
 end
@@ -43,6 +46,9 @@ else
 end
 
 % create log dirs
+if opt.verbose
+    fprintf('Log dir: %s\n', opt.logdir);
+end
 if exist(opt.logdir, 'dir')
     rmdir(opt.logdir, 's')
 end
@@ -71,7 +77,7 @@ copyfile(fullfile(eeglabroot, 'run_pipeline.m'), codeDir);
 copyfile(fullfile(eeglabroot, 'eeg_nemar_preprocess.m'), codeDir);
 copyfile(fullfile(eeglabroot, 'eeg_nemar_vis.m'), codeDir);
 copyfile(fullfile(eeglabroot, 'generate_report.m'), codeDir);
-copyfile(fullfile('/expanse/projects/nemar/openneuro/processed/logs', [dsnumber 'sbatch']), codeDir);
+% copyfile(fullfile('/expanse/projects/nemar/openneuro/processed/logs', [dsnumber 'sbatch']), codeDir);
 
 % import data
 if ~exist(fullfile(opt.bidspath,'dataset_description.json'), 'file')
