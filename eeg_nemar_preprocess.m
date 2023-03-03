@@ -1,4 +1,23 @@
-function [EEG, status] = eeg_nemar_preprocess(EEG, pipeline, logdir)
+function [EEG, status] = eeg_nemar_preprocess(EEG, varargin)
+    if nargin > 1
+        pipeline = varargin{1};
+    else
+        pipeline = {'remove_chan', 'cleanraw', 'avg_ref', 'runica', 'iclabel'};
+    end
+    if nargin > 2
+        logdir = varargin{2};
+    else
+        logdir = './eeg_nemar_preprocess_logs';
+        status = mkdir(logdir)
+    end
+
+    try
+        which eeglab;
+    catch
+        addpath('/expanse/projects/nemar/dtyoung/NEMAR-pipeline/eeglab');
+        eeglab nogui;
+    end
+
     [filepath, filename, ext] = fileparts(EEG.filename);
     log_file = fullfile(logdir, filename);
     if exist(log_file, 'file')

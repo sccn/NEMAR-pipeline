@@ -1,11 +1,31 @@
-function status = generate_report(ALLEEG, opt, eeg_logdir)
+function status = generate_report(ALLEEG, varargin)
+    if nargin > 1
+        study_path = varargin{1}
+    else 
+        study_path = './dataqual_report'
+        mkdir(study_path)
+    end
+    if nargin > 2
+        eeg_logdir = varargin{2}
+    else
+        eeg_logdir = study_path;
+    end
+
+    if ~exist('eeglab')
+        addpath('/expanse/projects/nemar/dtyoung/NEMAR-pipeline/eeglab');
+        eeglab nogui;
+    end
+    if ~exist('jsonread')
+        addpath('/expanse/projects/nemar/dtyoung/NEMAR-pipeline/JSONio');
+    end
+
     status = zeros(numel(ALLEEG), 1);
     goodDataPs = zeros(numel(ALLEEG),1);
     goodChanPs = zeros(numel(ALLEEG),1);
     goodICPs = zeros(numel(ALLEEG),1);
-    parfor i=1:numel(ALLEEG)
+    for i=1:numel(ALLEEG)
         EEG = ALLEEG(i);
-
+        EEG = eeg_checkset(EEG, 'loaddata');
         [filepath, filename, ext] = fileparts(EEG.filename);
         log_file = fullfile(eeg_logdir, filename);
 
@@ -58,7 +78,7 @@ function status = generate_report(ALLEEG, opt, eeg_logdir)
 
     % dataset level report
     if sum(goodDataPs) ~= 0
-        report_file = fullfile(opt.bidspath, 'dataqual.json');
+        report_file = fullfile(study_path, 'dataqual.json');
         fid = fopen(report_file,'w');
         fprintf(fid,'{}');
         fclose(fid);

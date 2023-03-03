@@ -2,7 +2,7 @@ nemar_path = '/expanse/projects/nemar/openneuro';
 children = dir(nemar_path);
 folders = {children.name};
 dsfolders = folders(startsWith(folders, 'ds'));
-ignore = {'ds003645', 'ds002718', 'ds002691'};
+ignore = {'ds001787', 'ds002718', 'ds003645'};
 for i=1:32 %16:25 %numel(dsfolders)
     dsnumber = dsfolders{i};
     if ~any(strcmp(dsnumber, ignore))
