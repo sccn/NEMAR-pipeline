@@ -1,4 +1,23 @@
-function [EEG, status] = eeg_nemar_vis(EEG, plots, logdir)
+function [EEG, status] = eeg_nemar_vis(EEG, varargin)
+    if nargin > 1
+        plots = varargin{1};
+    else
+        plots = {'midraw', 'spectra', 'icaact', 'icmap'};
+    end
+    if nargin > 2
+        logdir = varargin{2};
+    else
+        logdir = './eeg_nemar_vis_logs';
+        status = mkdir(logdir)
+    end
+
+    try
+        which eeglab;
+    catch
+        addpath('/expanse/projects/nemar/dtyoung/NEMAR-pipeline/eeglab');
+        eeglab nogui;
+    end
+
     [filepath, filename, ext] = fileparts(EEG.filename);
     log_file = fullfile(logdir, filename);
 

@@ -10,7 +10,7 @@ echo "#SBATCH --nodes=1" >> $sbatchfile
 echo "#SBATCH --mem=240G" >> $sbatchfile
 echo "#SBATCH -o $path/$dsnumber.out" >> $sbatchfile
 echo "#SBATCH -e $path/$dsnumber.err" >> $sbatchfile
-echo "#SBATCH -t 24:00:00" >> $sbatchfile
+echo "#SBATCH -t 48:00:00" >> $sbatchfile
 echo "#SBATCH --account=csd403" >> $sbatchfile
 echo "#SBATCH --no-requeue" >> $sbatchfile
 echo "#SBATCH --ntasks-per-node=1" >> $sbatchfile
