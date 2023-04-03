@@ -182,7 +182,7 @@ function [EEG, status] = eeg_nemar_vis(EEG, varargin)
         % ICLabel plot (temp)
         figure;
         EEG.icawinv = bsxfun(@minus, EEG.icawinv, mean(EEG.icawinv,1));
-        pop_viewprops( EEG, 0, [1:35], {'freqrange', [2 64]}, {}, 1, 'ICLabel');
+        pop_viewprops( EEG, 0, [1:min(35, size(EEG.icaweights,1))], {'freqrange', [2 64]}, {}, 1, 'ICLabel');
         print(gcf,'-dsvg','-noui',fullfile(outpath,[ result_basename '_icamaps.svg' ]))
         close
     end

@@ -87,23 +87,30 @@ if strcmp(opt.modeval, "import")
         error('Dataset description file not found');
     end
 end
-pop_editoptions( 'option_storedisk', 1);
-[STUDY, ALLEEG, dsname] = load_dataset(opt.bidspath, opt.outputdir, opt.modeval);
-
-if opt.verbose
-    disp('Check channel location after importing\n');
-    ALLEEG(1).chanlocs(1)
-end
 
 % set up pipeline sequence and report
 status_file = fullfile(opt.logdir, 'pipeline_status.csv');
 pipeline = {'remove_chan', 'cleanraw', 'avg_ref', 'runica', 'iclabel'};
 plots = {'midraw', 'spectra', 'icaact', 'icmap'};
 if strcmp(opt.modeval, 'import')
+    % if rerun, it's assumed import was already successful
     preproc_status = zeros(numel(ALLEEG), numel(pipeline));
     vis_status = zeros(numel(ALLEEG), numel(plots));
     dataqual_status = zeros(numel(ALLEEG), 1);
-    create_status_table(status_file, "0", [pipeline plots "dataqual"], [preproc_status plots dataqual_status]);
+    create_status_table(status_file, "0", [pipeline plots "dataqual"], [preproc_status vis_status dataqual_status]);
+end
+
+pop_editoptions( 'option_storedisk', 1);
+[STUDY, ALLEEG, dsname] = load_dataset(opt.bidspath, opt.outputdir, opt.modeval);
+
+% if reached here, import was successful. Rewrite report table
+if strcmp(opt.modeval, 'import')
+    create_status_table(status_file, "1", [pipeline plots "dataqual"], [preproc_status vis_status dataqual_status]);
+end
+
+if opt.verbose
+    disp('Check channel location after importing\n');
+    ALLEEG(1).chanlocs(1)
 end
 
 % run pipeline
