@@ -29,8 +29,6 @@ def append_custom(df):
                     # put in default note for known issues
                     matlab_log = os.path.join(path, "logs", "matlab_log")
                     errors = get_known_errors(matlab_log)
-                    if ds == "ds002338":
-                        print(errors)
                     file.write(errors)
 
             with open(debug_note, 'r') as file:
@@ -46,6 +44,20 @@ def append_custom(df):
 
     return df
 
+'''
+Reformat cell 
+@parameters:
+    df: dataframe containing only one row of a dataset pipeline status
+'''
+def reformat_cell(df):
+    for (columnName, series) in df.items():
+        if isinstance(series[0], str):
+            counts = series[0].split('/')
+            if len(counts) == 2 and counts[0] == counts[1]:
+                reformatted = "1"
+                df.at[0,columnName] = reformatted
+    return df
+
 def get_pipeline_status():
     frames = []
     for f in os.listdir(processed_dir):
@@ -54,6 +66,7 @@ def get_pipeline_status():
             status_file = os.path.join(path, "logs", "pipeline_status.csv")
             if os.path.isfile(status_file):
                 df = pd.read_csv(status_file)
+                df = reformat_cell(df)
                 frames.append(df)
 
     return pd.concat(frames)
