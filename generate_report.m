@@ -37,15 +37,31 @@ function status = generate_report(ALLEEG, varargin)
             fprintf(fid,'{}');
             fclose(fid);
 
+            status(i) = 1;
+
             % [dataP, chanP] = cleanraw_report(EEG, report_file);
             %report.append_report('asrFail', 0, outpath, result_basename);
             cur_report = jsonread(report_file);
-            goodDataPercent = round(100*EEG.pnts/numel(EEG.etc.clean_sample_mask), 2); % new change to clean_raw_data
-            goodChanPercent = round(100*EEG.nbchan/numel(EEG.etc.clean_channel_mask), 2);
-            cur_report.nGoodData = EEG.pnts;
-            cur_report.goodDataPercent = goodDataPercent;
-            cur_report.nGoodChans = EEG.nbchan;
-            cur_report.goodChansPercent = goodChanPercent;
+            if isfield(EEG.etc, 'clean_sample_mask')
+                goodDataPercent = round(100*EEG.pnts/numel(EEG.etc.clean_sample_mask), 2); % new change to clean_raw_data
+                cur_report.nGoodData = EEG.pnts;
+                cur_report.goodDataPercent = goodDataPercent;
+                goodDataPs(i) = goodDataPercent;
+            else
+                cur_report.goodDataFail = 1;
+                warning('Warning: clean_sample_mask not found');
+                status(i) = 0;
+            end
+            if isfield(EEG.etc, 'clean_channel_mask')
+                goodChanPercent = round(100*EEG.nbchan/numel(EEG.etc.clean_channel_mask), 2);
+                cur_report.nGoodChans = EEG.nbchan;
+                cur_report.goodChansPercent = goodChanPercent;
+                goodChanPs(i) = goodChanPercent;
+            else
+                cur_report.goodChanFail = 1;
+                warning('Warning: clean_channel_mask not found');
+                status(i) = 0;
+            end
             jsonwrite(report_file, cur_report);
 
             % icaP = ica_report(EEG, report_file);
@@ -56,20 +72,16 @@ function status = generate_report(ALLEEG, varargin)
                 numICs = EEG.nbchan-1;
                 cur_report.nICs = numICs;
                 cur_report.nGoodICs = numICs-rejected_ICs;
-                cur_report.goodICA = 100*(numICs-rejected_ICs)/numICs;
+                cur_report.goodICA = round(100*(numICs-rejected_ICs)/numICs, 2);
 
-                goodICPercent = 100*(numICs-rejected_ICs)/numICs;
+                goodICPercent = round(100*(numICs-rejected_ICs)/numICs, 2);
+                goodICPs(i) = goodICPercent;
             else
                 cur_report.icaFail = 1;
-                goodICPercent = -1;
+                warning('Warning: ICA report failed');
+                status(i) = 0;
             end
             jsonwrite(report_file, cur_report);
-
-            goodDataPs(i) = goodDataPercent;
-            goodChanPs(i) = goodChanPercent;
-            goodICPs(i) = goodICPercent;
-
-            status(i) = 1;
         catch ME
             fprintf('%s\n%s\n',ME.identifier, ME.getReport());
         end
