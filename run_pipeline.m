@@ -14,13 +14,14 @@ opt = finputcheck(varargin, { ...
     'eeglabroot'              'string'    {}                      eeglabroot; ...
     'outputdir'               'string'    { }                     fullfile(nemar_path, 'processed', dsnumber); ...
     'logdir'                  'string'    {}                      fullfile(nemar_path, 'processed', dsnumber, 'logs'); ...
+    'copycode'                'boolean'   {}                      true; ...
     'modeval'                 'string'    {'import', 'rerun'}    'import'; ...                                                      % if import mode, pipeline will overwrite existing outputdir. rerun won't 
     'preprocess'              'boolean'   {}                      true; ...
     'preprocess_pipeline'     'cell'      {}                      {'remove_chan', 'cleanraw', 'avg_ref', 'runica', 'iclabel'}; ...  % preprocessing steps
     'vis'                     'boolean'   {}                      true; ...
     'vis_plots'               'cell'      {}                      {'midraw', 'spectra', 'icaact', 'icmap'}; ...                     % visualization plots
     'dataqual'                'boolean'   {}                      true; ...
-    'maxparpool'              'integer'   {}                      128; ...  % if 0, sequential processing
+    'maxparpool'              'integer'   {}                      127; ...  % if 0, sequential processing
     'verbose'                 'boolean'   {}                      true; ...
     }, 'run_pipeline');
 if isstr(opt), error(opt); end
@@ -73,22 +74,26 @@ if strcmp(opt.modeval, "import")
     end
     diary(log_file);
 
-    if opt.verbose
-        disp("Creating code dir and copying pipeline code");
-    end
-
-    mkdir(codeDir)
-    copyfile(fullfile(eeglabroot, 'load_eeglab.m'), codeDir);
-    copyfile(fullfile(eeglabroot, 'load_dataset.m'), codeDir);
-    copyfile(fullfile(eeglabroot, 'run_pipeline.m'), codeDir);
-    copyfile(fullfile(eeglabroot, 'eeg_nemar_preprocess.m'), codeDir);
-    copyfile(fullfile(eeglabroot, 'eeg_nemar_vis.m'), codeDir);
-    copyfile(fullfile(eeglabroot, 'generate_report.m'), codeDir);
-    % copyfile(fullfile('/expanse/projects/nemar/openneuro/processed/logs', [dsnumber 'sbatch']), codeDir);
-
     % import data
     if ~exist(fullfile(opt.bidspath,'dataset_description.json'), 'file')
         error('Dataset description file not found');
+    end
+end
+
+% save the latest version of the pipeline
+if opt.copycode
+    if opt.verbose
+        disp("Creating code dir and copying pipeline code");
+    end
+    mkdir(codeDir)
+    scripts = {'load_dataset.m', 'run_pipeline.m', 'eeg_nemar_preprocess.m', 'eeg_nemar_vis.m', 'generate_report.m'};
+    for s=1:numel(scripts)
+        script_src = fullfile(eeglabroot, scripts{s});
+        script_dest = fullfile(codeDir, scripts{s});
+        if exist(script_dest, 'file')
+            delete(script_dest);
+        end
+        copyfile(script_src, script_dest);
     end
 end
 
@@ -98,7 +103,7 @@ pipeline = opt.preprocess_pipeline;
 plots = opt.vis_plots; 
 if strcmp(opt.modeval, 'import')
     % if rerun, it's assumed import was already successful
-    preproc_status = -1*ones(1, numel(opt.pipeline));
+    preproc_status = -1*ones(1, numel(pipeline));
     vis_status = -1*ones(1, numel(plots));
     dataqual_status = -1*ones(1, 1);
     create_status_table(status_file, "0", [pipeline plots "dataqual"], [preproc_status vis_status dataqual_status]);
@@ -131,7 +136,6 @@ if opt.preprocess
         [~, preproc_status(i,:)] = eeg_nemar_preprocess(EEG, pipeline, eeg_logdir);
     end
     write_alleeg_status_table(ALLEEG, opt.modeval, fullfile(opt.logdir, 'preproc_status.mat'), pipeline, preproc_status);
-    %save(fullfile(opt.logdir, 'preproc_status.mat'), 'preproc_status');
 end
 
 % visualization
@@ -141,14 +145,12 @@ if opt.vis
         [~, vis_status(i,:)] = eeg_nemar_vis(EEG, plots, eeg_logdir);
     end
     write_alleeg_status_table(ALLEEG, opt.modeval, fullfile(opt.logdir, 'vis_status.mat'), plots, vis_status);
-    %save(fullfile(opt.logdir, 'vis_status.mat'), 'vis_status');
 end
 
 % data quality
 if opt.dataqual
     dataqual_status = generate_report(ALLEEG, opt.outputdir, eeg_logdir);
     write_alleeg_status_table(ALLEEG, opt.modeval, fullfile(opt.logdir, 'dataqual_status.mat'), {'dataqual'}, dataqual_status);
-    %save(fullfile(opt.logdir, 'dataqual_status.mat'), 'dataqual_status');
 end
 
 % final step: generate summary status report
