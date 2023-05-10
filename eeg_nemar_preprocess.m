@@ -63,7 +63,13 @@ function [EEG, status] = eeg_nemar_preprocess(EEG, varargin)
             end
 
             if strcmp(operation, "cleanraw")
-                % status_tbl.cleanraw(strcmp(status_tbl.dsnumber,dsname)) = false;
+                if EEG.trials > 1
+                    error('Epoched data given to cleanraw');
+                end
+		
+		% remove offset
+		EEG = pop_rmbase( EEG, [],[]);
+
                 % clean data using the clean_rawdata plugin
                 options = {'FlatlineCriterion',5,'ChannelCriterion',0.85, ...
                     'LineNoiseCriterion',4,'Highpass',[0.75 1.25] ,'BurstCriterion',50, ...
@@ -92,10 +98,12 @@ function [EEG, status] = eeg_nemar_preprocess(EEG, varargin)
             if strcmp(operation, "iclabel")
                 % status_tbl.iclabel(strcmp(status_tbl.dsnumber,dsname)) = false;
                 % % run ICLabel and flag artifactual components
-                options = {'default'};
-                EEG = pop_iclabel(EEG, options{:});
-                options = {[NaN NaN;0.9 1;0.9 1;NaN NaN;NaN NaN;NaN NaN;NaN NaN]};
-                EEG = pop_icflag( EEG, options{:});
+                % if strcmp(EEG.etc.datatype, 'EEG')
+                    options = {'default'};
+                    EEG = pop_iclabel(EEG, options{:});
+                    options = {[NaN NaN;0.9 1;0.9 1;NaN NaN;NaN NaN;NaN NaN;NaN NaN]};
+                    EEG = pop_icflag( EEG, options{:});
+                % end
             end
 
             % if reached, the operation finished with no error

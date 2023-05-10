@@ -45,17 +45,20 @@ function status = generate_report(ALLEEG, varargin)
             if isfield(EEG.etc, 'clean_sample_mask')
                 goodDataPercent = round(100*EEG.pnts/numel(EEG.etc.clean_sample_mask), 2); % new change to clean_raw_data
                 cur_report.nGoodData = EEG.pnts;
-                cur_report.goodDataPercent = goodDataPercent;
+                cur_report.goodDataPercent = sprintf('%d of %d (%.0f%%)', EEG.pnts, numel(EEG.etc.clean_sample_mask), goodDataPercent);
                 goodDataPs(i) = goodDataPercent;
             else
                 cur_report.goodDataFail = 1;
                 warning('Warning: clean_sample_mask not found');
                 status(i) = 0;
             end
+            jsonwrite(report_file, cur_report);
+
             if isfield(EEG.etc, 'clean_channel_mask')
                 goodChanPercent = round(100*EEG.nbchan/numel(EEG.etc.clean_channel_mask), 2);
                 cur_report.nGoodChans = EEG.nbchan;
                 cur_report.goodChansPercent = goodChanPercent;
+                cur_report.goodChansPercent= sprintf('%d of %d (%.0f%%)', EEG.nbchan, numel(EEG.etc.clean_channel_mask), goodChanPercent);
                 goodChanPs(i) = goodChanPercent;
             else
                 cur_report.goodChanFail = 1;
@@ -72,7 +75,7 @@ function status = generate_report(ALLEEG, varargin)
                 numICs = EEG.nbchan-1;
                 cur_report.nICs = numICs;
                 cur_report.nGoodICs = numICs-rejected_ICs;
-                cur_report.goodICA = round(100*(numICs-rejected_ICs)/numICs, 2);
+                cur_report.goodICA = sprintf('%d of %d (%.0f%%)', numICs-rejected_ICs, numICs, round(100*(numICs-rejected_ICs)/numICs, 2));
 
                 goodICPercent = round(100*(numICs-rejected_ICs)/numICs, 2);
                 goodICPs(i) = goodICPercent;

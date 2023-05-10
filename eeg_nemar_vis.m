@@ -74,7 +74,8 @@ function [EEG, status] = eeg_nemar_vis(EEG, varargin)
             end
         end
         % eegplot
-        eegplot(EEG.data(:,startLat:startLat+EEG.srate*2), 'srate', EEG.srate, ...
+        data = EEG.data(:, startLat:startLat+EEG.srate*2);
+        eegplot(data, 'srate', EEG.srate, ...
             'winlength', 2, 'eloc_file', EEG.chanlocs, 'noui', 'on', 'title','');
         print(gcf,'-dsvg','-noui',fullfile(outpath, [ result_basename '_eegplot_mid-sample.svg' ]));
         close
@@ -136,6 +137,9 @@ function [EEG, status] = eeg_nemar_vis(EEG, varargin)
         close
     end
 
+    % set(gcf, 'position', [0 0 2000 100], 'paperpositionmode', 'auto')
+    % print(gcf,'-djpeg','-noui',fullfile(EEG.filepath,[ result_basename '_clean-sample-mask.jpeg' ]));
+
     function plot_IC_activation(EEG)
         result_basename = EEG.filename(1:end-4); % for plots
         outpath = EEG.filepath;
@@ -164,6 +168,7 @@ function [EEG, status] = eeg_nemar_vis(EEG, varargin)
             end
         end
         tmp = EEG.icaweights*EEG.icasphere*EEG.data(:,startLat:startLat+EEG.srate*2);
+        tmp = normalize(tmp, 2); % normalize before plotting
         eegplot(tmp, 'srate', EEG.srate, ...
             'winlength', 2, 'eloc_file', iclocs, 'noui', 'on', 'title', '');
         h = findall(gcf,'-property','FontName');

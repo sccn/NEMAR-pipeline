@@ -8,7 +8,6 @@ if isempty(which('finputcheck'))
     eeglab nogui;
 end
 
-varargin{:}
 opt = finputcheck(varargin, { ...
     'bidspath'                'string'    {}                      fullfile(nemar_path, dsnumber);  ...
     'eeglabroot'              'string'    {}                      eeglabroot; ...
@@ -26,6 +25,7 @@ opt = finputcheck(varargin, { ...
     }, 'run_pipeline');
 if isstr(opt), error(opt); end
 
+opt
 % reload eeglab if different version specified
 if ~strcmp(eeglabroot, opt.eeglabroot)
     addpath(fullfile(opt.eeglabroot,'eeglab'));
@@ -129,6 +129,7 @@ if opt.maxparpool > 0
         parpool([1 opt.maxparpool]); % debug 1, compute 128 per node
     end
 end
+
 % preprocessing
 if opt.preprocess
     parfor (i=1:numel(ALLEEG), opt.maxparpool)
