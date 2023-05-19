@@ -3,7 +3,9 @@
 import numpy as np
 import pandas as pd
 import os
+import datetime
 
+raw_dir = "/data/qumulo/openneuro"
 processed_dir = "/data/qumulo/openneuro/processed"
 # processed_dir = "/expanse/projects/nemar/dtyoung/NEMAR-pipeline/temp/processed"
 final_file = "pipeline_status_all.csv" #"/data/qumulo/openneuro/processed/logs/pipeline_status_all.csv" #"/expanse/projects/nemar/dtyoung/NEMAR-pipeline/temp/processed/pipeline_status_all.csv"
@@ -20,7 +22,35 @@ def get_known_errors(matlab_log):
     
     return errors
 
-def append_custom(df):
+def append_modality(df):
+    '''
+    Get the modality of the dataset
+    df is a row pertaining to the dataset of interest
+    '''
+    if "modality" in df:
+        return df
+    else:
+        # search for modality by looking at the files
+        modality = "unknown"
+        path = os.path.join(raw_dir, df['dsnumber'][0])
+        for root, d_names, f_names in os.walk(path):
+            val = next((x for x in f_names if x.endswith(("_eeg.json", "_ieeg.json", "_meg.json"))), None)
+            if val:
+                modality = val.split("_")[-1].split(".")[0].upper()
+                break
+    
+        df['modality'] = modality
+
+        return df
+
+def append_latest_date(df):
+    log_dir = os.path.join(processed_dir, df['dsnumber'][0], 'logs')
+    latest_date = max((datetime.datetime.fromtimestamp(os.path.getmtime(os.path.join(root, file)))
+                        for root, _, files in os.walk(log_dir) for file in files))
+    df['latest_date'] = latest_date
+    return df
+
+def append_debug(df):
     '''
     Append debug note to dataframe
 
@@ -82,6 +112,17 @@ def reformat_cell(df):
                 df.at[0,columnName] = reformatted
     return df
 
+def append_custom(df):
+    '''
+    Append custom columns to dataframe
+    '''
+    if len(df) > 1:
+        raise ValueError('More than one dataset being processed')
+    df = append_modality(df)
+    df = append_debug(df)
+    df = append_latest_date(df)
+    return df
+    
 def get_pipeline_status():
     frames = []
     for f in os.listdir(processed_dir):
@@ -97,8 +138,6 @@ def get_pipeline_status():
     return pd.concat(frames)
 
 final_df = get_pipeline_status()
-# final_df = reformat_cell(final_df)
-# final_df = append_custom(final_df)
 
 with open(final_file, 'w') as out:
     final_df.to_csv(out, index=False)
