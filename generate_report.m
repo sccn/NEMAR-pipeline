@@ -110,8 +110,14 @@ function status = generate_report(ALLEEG, varargin)
     function [goodDataPercent, goodChanPercent] = cleanraw_report(EEG, report_file)
         %report.append_report('asrFail', 0, outpath, result_basename);
         cur_report = jsonread(report_file);
-        goodDataPercent = round(100*EEG.pnts/numel(EEG.etc.clean_sample_mask), 2); % new change to clean_raw_data
-        goodChanPercent = round(100*EEG.nbchan/numel(EEG.etc.clean_channel_mask), 2);
+        goodDataPercent = 100;
+        goodChanPercent = 100;
+        if isfield(EEG.etc, clean_sample_mask)
+            goodDataPercent = round(100*EEG.pnts/numel(EEG.etc.clean_sample_mask), 2); % new change to clean_raw_data
+        end
+        if isfield(EEG.etc, clean_channel_mask)
+            goodChanPercent = round(100*EEG.nbchan/numel(EEG.etc.clean_channel_mask), 2);
+        end
         cur_report.nGoodData = EEG.pnts;
         cur_report.goodDataPercent = goodDataPercent;
         cur_report.nGoodChans = EEG.nbchan;
