@@ -2,16 +2,18 @@
 #!/expanse/projects/nemar/dtyoung/NEMAR-pipeline/.conda/envs/web-scrapping/bin/python
 import numpy as np
 import pandas as pd
-import os
+import os, sys, stat
 import datetime
 
 raw_dir = "/data/qumulo/openneuro"
 processed_dir = "/data/qumulo/openneuro/processed"
-# processed_dir = "/expanse/projects/nemar/dtyoung/NEMAR-pipeline/temp/processed"
-final_file = "pipeline_status_all.csv" #"/data/qumulo/openneuro/processed/logs/pipeline_status_all.csv" #"/expanse/projects/nemar/dtyoung/NEMAR-pipeline/temp/processed/pipeline_status_all.csv"
-final_file_html = "pipeline_status_all.html" #"/data/qumulo/openneuro/processed/logs/pipeline_status_all.html" 
+sccn_dir = "/var/local/www/eeglab/NEMAR"
+final_file = os.path.join(sccn_dir,"pipeline_status_all.csv") #"/data/qumulo/openneuro/processed/logs/pipeline_status_all.csv" #"/expanse/projects/nemar/dtyoung/NEMAR-pipeline/temp/processed/pipeline_status_all.csv"
+final_file_html = os.path.join(sccn_dir,"pipeline_status_all.html") #"/data/qumulo/openneuro/processed/logs/pipeline_status_all.html" 
 
-def get_known_errors(matlab_log):
+logfile = open(os.path.join(sccn_dir,'log.txt'),'w')
+
+def get_known_errors(matlab_log, batcherr_log):
     errors = ""
     with open(matlab_log, 'r') as file:
         data = file.read()
@@ -19,6 +21,11 @@ def get_known_errors(matlab_log):
             errors += "Out of memory\n"
         if "too short" in data.lower():
             errors += "Data too short\n"
+
+    with open(batcherr_log, 'r') as file:
+        data = file.read()
+        if "DUE TO TIME LIMIT" in data.lower():
+            errors += "Cancelled due to time limit\n"
     
     return errors
 
@@ -34,9 +41,11 @@ def append_modality(df):
         modality = "unknown"
         path = os.path.join(raw_dir, df['dsnumber'][0])
         for root, d_names, f_names in os.walk(path):
-            val = next((x for x in f_names if x.endswith(("_eeg.json", "_ieeg.json", "_meg.json"))), None)
+            # val = next((x for x in f_names if x.endswith(("_eeg.json", "_ieeg.json", "_meg.json"))), None)
+            val = next((x for x in d_names if x in ["eeg", "ieeg", "meg"]), None)
             if val:
-                modality = val.split("_")[-1].split(".")[0].upper()
+                # modality = val.split("_")[-1].split(".")[0].upper()
+                modality = val
                 break
     
         df['modality'] = modality
@@ -70,8 +79,14 @@ def append_debug(df):
             with open(debug_note, 'w') as file:
                 # put in default note for known issues
                 matlab_log = os.path.join(path, "logs", "matlab_log")
-                errors = get_known_errors(matlab_log)
+                batcherr_log = os.path.join(processed_dir, "logs", df['dsnumber'][0] + ".err")
+                errors = get_known_errors(matlab_log, batcherr_log)
                 file.write(errors)
+
+        try:
+            os.chmod(debug_note, 0o664) # add write permission to group
+        except:
+            print(f'Cant change permission for {debug_note}')
 
         if check_status(df):
             notes = "ok"
@@ -87,7 +102,7 @@ def append_debug(df):
 
 def check_status(df):
     '''
-    Check if at least 60% of dataset has been processed
+    Check if at least 80% of dataset has been processed
     '''
     status = []
     for (columnName, series) in df.items():
@@ -95,7 +110,7 @@ def check_status(df):
             counts = series[0].split('/')
             if len(counts) == 2:
                 status.append(int(counts[0]) / int(counts[1]))
-    return all(np.array(status) > 0.6)
+    return all(np.array(status) > 0.8)
                 
 
 def reformat_cell(df):
@@ -126,6 +141,7 @@ def append_custom(df):
 def get_pipeline_status():
     frames = []
     for f in os.listdir(processed_dir):
+        logfile.write(f'processing {f}\n')
         path = os.path.join(processed_dir, f)
         if os.path.isdir(path):
             status_file = os.path.join(path, "logs", "pipeline_status.csv")
@@ -141,5 +157,10 @@ final_df = get_pipeline_status()
 
 with open(final_file, 'w') as out:
     final_df.to_csv(out, index=False)
+    logfile.write('writing csv')
+
 with open(final_file_html, 'w') as out:
     final_df.to_html(out, index=False)
+    logfile.write('writing html')
+
+logfile.close()

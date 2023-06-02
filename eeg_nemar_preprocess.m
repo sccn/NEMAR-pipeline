@@ -14,8 +14,12 @@ function [EEG, status] = eeg_nemar_preprocess(EEG, varargin)
     try
         which eeglab;
     catch
-        addpath('/expanse/projects/nemar/dtyoung/NEMAR-pipeline/eeglab');
-        eeglab nogui;
+        try
+            addpath('/expanse/projects/nemar/dtyoung/NEMAR-pipeline/eeglab');
+            eeglab nogui;
+        catch
+            error('EEGLAB load failed.')
+        end
     end
 
     [filepath, filename, ext] = fileparts(EEG.filename);

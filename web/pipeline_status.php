@@ -53,6 +53,7 @@
                     </button>
                 </div>
                 <div class="modal-body">
+					<div id="nemarpath"></div>
                     <form method=POST id='Activate' name='Activate' enctype='multipart/form-data'>
                         <div class="form-group">
                             <label for="doc" class="col-form-label">Log dir:</label>
@@ -90,7 +91,37 @@
                     <form method=POST id='Activate' name='Activate' enctype='multipart/form-data'>
                         <div class="form-group">
                             <label for="logcontent" class="col-form-label">Log:</label>
-                            <textarea class="form-control" id="logcontent" name="matlab" rows="30"></textarea>
+			    <textarea class="form-control" id="logcontent" name="matlab" rows="30"></textarea>
+                        </div>
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                    </form>
+		</div>
+	    </div>
+	</div>
+    </div>
+
+    <!-- Ind Log content modal -->
+    <div class="modal fade" id="dsIndLogs" data-backdrop="static" tabindex="-1" role="dialog" aria-labelledby="dsIndLogsLabel" aria-hidden="true">
+        <div class="modal-dialog modal-xl" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="dsMatlabLogsLabel">Individual Log Files</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <form method=POST id='Activate' name='Activate' enctype='multipart/form-data'>
+                        <div class="form-group">
+                            <label for="logcontent" class="col-form-label">Log:</label>
+			    <div>
+				<div class="row">
+				    <div class="col" id="indlogtable"></div>
+				    <div class="col">
+			    		<textarea class="form-control" id="indlogcontent" name="indlogcontent" rows="90"></textarea>
+				    </div>
+				</div>
+			    </div>
                         </div>
                         <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
                     </form>
@@ -128,7 +159,7 @@
 			first_td.html("<a data-toggle='modal' data-target='#dsLogs' data-dsnumber='" + dsnumber + "'>" + dsnumber + "</a>");
 			var last_td = $(this).children().last();
 			last_td.html("<a data-toggle='modal' class='text-primary' data-target='#dsMatlabLogs' data-dsnumber='" + dsnumber + "' data-file='matlab'>MATLAB</a><br>");
-			last_td.append("<a data-toggle='modal' class='text-success' data-target='#dsMatlabLogs' data-dsnumber='" + dsnumber + "' data-file='ind'>Ind status</a><br>");
+			last_td.append("<a data-toggle='modal' class='text-success' data-target='#dsIndLogs' data-dsnumber='" + dsnumber + "' data-file='ind'>Ind status</a><br>");
 			last_td.append("<a data-toggle='modal' class='text-danger' data-target='#dsMatlabLogs' data-dsnumber='" + dsnumber + "' data-file='sbatcherr'>Batch .err</a>");
 		    });
 
@@ -137,6 +168,7 @@
 		var clicked = $(event.relatedTarget);
 		var dsnumber = clicked.data('dsnumber');
 		var modal = $(this);
+		modal.find('#nemarpath').html('<a href="https://nemar.org/dataexplorer/detail?dataset_id=' + dsnumber + '">View on NEMAR</a>');
 		modal.find('#logDir').val('/expanse/projects/nemar/openneuro/processed/' + dsnumber + '/logs');
 		modal.find('#matlabLog').val('/expanse/projects/nemar/openneuro/processed/' + dsnumber + '/logs/matlab_log');
 		modal.find('#note').val('/expanse/projects/nemar/openneuro/processed/' + dsnumber + '/logs/debug/debug_note');
@@ -148,6 +180,19 @@
 		var modal = $(this);
 		$.post('get_file.php', { dsnumber: dsnumber, file: file }, function(result) { 
 		    modal.find('#logcontent').val(result);
+		});
+	    });
+	    $('#dsIndLogs').on('show.bs.modal', function (event) {
+		var clicked = $(event.relatedTarget);
+		var dsnumber = clicked.data('dsnumber');
+		var file = clicked.data('file');
+		console.log(file);
+		var modal = $(this);
+		$.post('get_file.php', { dsnumber: dsnumber, file: file }, function(result) { 
+		    if (file === "ind") {
+		        var result = csv_string_to_table(result, dsnumber);
+		    }
+		    modal.find('#indlogtable').html(result);
 		});
 	    });
         } );
@@ -162,6 +207,56 @@
 	   // Copy the text inside the text field
 	  navigator.clipboard.writeText(copyText.value);
 	} 
+
+	function csv_string_to_table(csv_string, dsnumber) {
+	    var rows = csv_string.trim().split(/\r?\n|\r/); // Regex to split/separate the CSV rows
+	    var table = '';
+	    var table_rows = '';
+	    var table_header = '';
+
+	    rows.forEach(function(row, row_index) {
+		var table_columns = '';
+		var columns = row.split(','); // split/separate the columns in a row
+		columns.forEach(function(column, column_index) {
+			if (row_index == 0) {
+				table_columns += '<th>' + column + '</th>';
+			}
+			else {
+				if (column_index == 0) {
+					var filename = column.split('.')[0];
+					//column = "<a data-toggle='modal' class='text' data-target='#dsMatlabLogs' data-dsnumber='" + dsnumber + "' data-file='" + filename + "'>" + filename + "</a>";
+					column = "<a class='text-secondary' onclick=\"showIndLogContent('" + dsnumber + "', '" + filename + "')\">" + filename + "</a>";
+					table_columns += '<td>' + column + '</td>';
+				}
+				else {
+					table_columns += '<td>' + column + '</td>';
+				}
+			}
+		});
+		if (row_index == 0) {
+		    table_header += '<tr>' + table_columns + '</tr>';
+		} else {
+		    table_rows += '<tr>' + table_columns + '</tr>';
+		}
+	    });
+
+	    table += '<table>';
+		table += '<thead>';
+		    table += table_header;
+		table += '</thead>';
+		table += '<tbody>';
+		    table += table_rows;
+		table += '</tbody>';
+	    table += '</table>';
+
+	    return table;
+	}
+	function showIndLogContent(dsnumber, logfile) {
+		$.post('get_file.php', { dsnumber: dsnumber, file: logfile }, function(result) { 
+		    $('#indlogcontent').val(result);
+		});
+
+	}
     </script>
     </body>
 </html>

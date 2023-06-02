@@ -20,7 +20,7 @@ opt = finputcheck(varargin, { ...
     'vis'                     'boolean'   {}                      true; ...
     'vis_plots'               'cell'      {}                      {'midraw', 'spectra', 'icaact', 'icmap'}; ...                     % visualization plots
     'dataqual'                'boolean'   {}                      true; ...
-    'maxparpool'              'integer'   {}                      127; ...  % if 0, sequential processing
+    'maxparpool'              'integer'   {}                      64; ...  % if 0, sequential processing
     'verbose'                 'boolean'   {}                      true; ...
     }, 'run_pipeline');
 if isstr(opt), error(opt); end
@@ -109,7 +109,7 @@ if strcmp(opt.modeval, 'import')
     create_status_table(status_file, "0", [pipeline plots "dataqual"], [preproc_status vis_status dataqual_status]);
 end
 
-pop_editoptions( 'option_storedisk', 1);
+pop_editoptions( 'option_storedisk', 0);
 [STUDY, ALLEEG, dsname] = load_dataset(opt.bidspath, opt.outputdir, opt.modeval);
 
 % if reached here, import was successful. Rewrite report table

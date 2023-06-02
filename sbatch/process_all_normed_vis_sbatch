@@ -1,0 +1,14 @@
+#!/bin/bash
+#SBATCH -J normed_vis
+#SBATCH --partition=shared
+#SBATCH --nodes=1
+#SBATCH --mem=128G
+#SBATCH --account=csd403
+#SBATCH --no-requeue
+#SBATCH -t 24:00:00
+#SBATCH --ntasks-per-node=1
+#SBATCH --output="/expanse/projects/nemar/openneuro/processed/logs/process_all/normed_vis.%j.out"
+#SBATCH -e /expanse/projects/nemar/openneuro/processed/logs/process_all/normed_vis.%j.err
+cd /home/dtyoung/NEMAR-pipeline/sbatch
+module load matlab
+matlab -nodisplay -r "process_all_normed_vis();"
