@@ -1,3 +1,13 @@
+% NEMAR preprocessing pipeline
+% Required input:
+%   EEG      - [struct]  input dataset
+% Optional inputs:
+%   pipeline - [cell]    list of preprocessing steps in order
+%   logdir   - [string]  directory to log execution output
+%   resave   - [boolean] whether to save processed data back on disk. Default true
+% Output:
+%   EEG      - [struct]  processed dataset
+%   status   - [boolean] whether dataset was processed successfully (1) or not (0)
 function [EEG, status] = eeg_nemar_preprocess(EEG, varargin)
     if nargin > 1
         pipeline = varargin{1};
@@ -8,7 +18,12 @@ function [EEG, status] = eeg_nemar_preprocess(EEG, varargin)
         logdir = varargin{2};
     else
         logdir = './eeg_nemar_preprocess_logs';
-        status = mkdir(logdir)
+        logdirstatus = mkdir(logdir);
+    end
+    if nargin > 3
+        resave = varargin{3};
+    else
+        resave = true;
     end
 
     try
@@ -71,8 +86,8 @@ function [EEG, status] = eeg_nemar_preprocess(EEG, varargin)
                     error('Epoched data given to cleanraw');
                 end
 		
-		% remove offset
-		EEG = pop_rmbase( EEG, [],[]);
+                % remove offset
+                EEG = pop_rmbase( EEG, [],[]);
 
                 % clean data using the clean_rawdata plugin
                 options = {'FlatlineCriterion',5,'ChannelCriterion',0.85, ...
@@ -91,7 +106,6 @@ function [EEG, status] = eeg_nemar_preprocess(EEG, varargin)
             end
 
             if strcmp(operation, "runica")
-                % status_tbl.runica(strcmp(status_tbl.dsnumber,dsname)) = false;
                 % run ICA reducing the dimention by 1 to account for average reference 
                 nChans = EEG.nbchan;
                 lrate = 0.00065/log(mean(nChans))/10; % not the runica default - suggested by Makoto approximately 12/22
@@ -100,7 +114,6 @@ function [EEG, status] = eeg_nemar_preprocess(EEG, varargin)
             end
 
             if strcmp(operation, "iclabel")
-                % status_tbl.iclabel(strcmp(status_tbl.dsnumber,dsname)) = false;
                 % % run ICLabel and flag artifactual components
                 % if strcmp(EEG.etc.datatype, 'EEG')
                     options = {'default'};
@@ -112,7 +125,9 @@ function [EEG, status] = eeg_nemar_preprocess(EEG, varargin)
 
             % if reached, the operation finished with no error
             status(i) = 1;
-            pop_saveset(EEG, 'filepath', EEG.filepath, 'filename', EEG.filename);
+            if resave
+                pop_saveset(EEG, 'filepath', EEG.filepath, 'filename', EEG.filename);
+            end
         end
     catch ME
         fprintf('%s\n%s\n',ME.identifier, ME.getReport());
