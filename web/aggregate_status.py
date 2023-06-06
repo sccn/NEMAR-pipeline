@@ -2,7 +2,7 @@
 #!/expanse/projects/nemar/dtyoung/NEMAR-pipeline/.conda/envs/web-scrapping/bin/python
 import numpy as np
 import pandas as pd
-import os, sys, stat
+import os
 import datetime
 
 raw_dir = "/data/qumulo/openneuro"
@@ -24,7 +24,7 @@ def get_known_errors(matlab_log, batcherr_log):
 
     with open(batcherr_log, 'r') as file:
         data = file.read()
-        if "DUE TO TIME LIMIT" in data.lower():
+        if "DUE TO TIME LIMIT" in data:
             errors += "Cancelled due to time limit\n"
     
     return errors
@@ -54,9 +54,14 @@ def append_modality(df):
 
 def append_latest_date(df):
     log_dir = os.path.join(processed_dir, df['dsnumber'][0], 'logs')
+    matlab_log = os.path.join(log_dir, 'matlab_log')
+    # if not os.path.isfile(matlab_log):
+        # print(f"matlab log not found for {df['dsnumber'][0]}")
+    # else:
     latest_date = max((datetime.datetime.fromtimestamp(os.path.getmtime(os.path.join(root, file)))
-                        for root, _, files in os.walk(log_dir) for file in files))
+                        for root, _, files in os.walk(log_dir) for file in files if file != 'debug_note'))
     df['latest_date'] = latest_date
+        # df['latest_date'] = datetime.datetime.fromtimestamp(os.path.getmtime(matlab_log))
     return df
 
 def append_debug(df):
@@ -74,19 +79,18 @@ def append_debug(df):
     if os.path.isdir(path):
         # get debug note
         debug_note = os.path.join(path, "logs", "debug", "debug_note")
-        if not os.path.isfile(debug_note):
-            # create debug note if not exists
+        if not os.path.isfile(debug_note) or os.stat(debug_note).st_size == 0:
+            # (re)create debug note if not exists or is empty
             with open(debug_note, 'w') as file:
                 # put in default note for known issues
                 matlab_log = os.path.join(path, "logs", "matlab_log")
                 batcherr_log = os.path.join(processed_dir, "logs", df['dsnumber'][0] + ".err")
                 errors = get_known_errors(matlab_log, batcherr_log)
                 file.write(errors)
-
-        try:
-            os.chmod(debug_note, 0o664) # add write permission to group
-        except:
-            print(f'Cant change permission for {debug_note}')
+            try:
+                os.chmod(debug_note, 0o664) # add write permission to group
+            except:
+                print(f'Cannot change permission for {debug_note}')
 
         if check_status(df):
             notes = "ok"
@@ -157,10 +161,10 @@ final_df = get_pipeline_status()
 
 with open(final_file, 'w') as out:
     final_df.to_csv(out, index=False)
-    logfile.write('writing csv')
+    logfile.write('writing csv\n')
 
 with open(final_file_html, 'w') as out:
     final_df.to_html(out, index=False)
-    logfile.write('writing html')
+    logfile.write('writing html\n')
 
 logfile.close()

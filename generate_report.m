@@ -1,4 +1,5 @@
 function status = generate_report(ALLEEG, varargin)
+    import java.text.*
     if nargin > 1
         study_path = varargin{1}
     else 
@@ -23,6 +24,7 @@ function status = generate_report(ALLEEG, varargin)
     goodDataPs = zeros(numel(ALLEEG),1);
     goodChanPs = zeros(numel(ALLEEG),1);
     goodICPs = zeros(numel(ALLEEG),1);
+    decFormatter = DecimalFormat;
     for i=1:numel(ALLEEG)
         EEG = ALLEEG(i);
         EEG = eeg_checkset(EEG, 'loaddata');
@@ -44,8 +46,8 @@ function status = generate_report(ALLEEG, varargin)
             cur_report = jsonread(report_file);
             if isfield(EEG.etc, 'clean_sample_mask')
                 goodDataPercent = round(100*EEG.pnts/numel(EEG.etc.clean_sample_mask), 2); % new change to clean_raw_data
-                cur_report.nGoodData = EEG.pnts;
-                cur_report.goodDataPercent = sprintf('%d of %d (%.0f%%)', EEG.pnts, numel(EEG.etc.clean_sample_mask), goodDataPercent);
+                cur_report.nGoodData = char(decFormatter.format(EEG.pnts));
+                cur_report.goodDataPercent = sprintf('%s of %s (%.0f%%)', char(decFormatter.format(EEG.pnts)), char(decFormatter.format(numel(EEG.etc.clean_sample_mask))), goodDataPercent);
                 goodDataPs(i) = goodDataPercent;
             else
                 cur_report.goodDataFail = 1;
@@ -85,6 +87,25 @@ function status = generate_report(ALLEEG, varargin)
                 status(i) = 0;
             end
             jsonwrite(report_file, cur_report);
+
+            % magnitude of line noise
+            cur_report = jsonread(report_file);
+            g = finputcheck({}, { 'freq'    'integer' []         [6, 10, 22]; ...
+                        'freqrange'   'integer'   []         [1 70]; ...
+                        'percent'   'integer'    [], 10});
+            [spec, freqs] = spectopo(EEG.data, 0, EEG.srate, 'freqrange', g.freqrange, 'title', '', 'chanlocs', EEG.chanlocs, 'percent', g.percent,'plot', 'off');
+            [~,ind50]=min(abs(freqs-50));
+            freq_50 = mean(spec(:, ind50));
+            [~,ind60]=min(abs(freqs-60));
+            freq_60 = mean(spec(:, ind60));
+            if freq_50 > freq_60
+                linenoise_magn = freq_50 - mean(mean(spec(:, [ind50-6:ind50-2 ind50+2:ind50+6]), 1));
+            else
+                linenoise_magn = freq_60 - mean(mean(spec(:, [ind60-6:ind60-2 ind60+2:ind60+6]), 1));
+            end
+            cur_report.linenoise_magn = sprintf('%.2fdB',linenoise_magn);
+            jsonwrite(report_file, cur_report);
+
         catch ME
             fprintf('%s\n%s\n',ME.identifier, ME.getReport());
         end

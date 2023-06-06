@@ -76,7 +76,7 @@ function [EEG, status] = eeg_nemar_vis(EEG, varargin)
         % eegplot
         data = EEG.data(:, startLat:startLat+EEG.srate*2);
         eegplot(data, 'srate', EEG.srate, ...
-            'winlength', 2, 'eloc_file', EEG.chanlocs, 'noui', 'on', 'title','');
+            'winlength', 2, 'eloc_file', EEG.chanlocs, 'noui', 'on', 'title','', 'events', EEG.event);
         print(gcf,'-dsvg','-noui',fullfile(outpath, [ result_basename '_eegplot_mid-sample.svg' ]));
         close
     end
@@ -167,7 +167,7 @@ function [EEG, status] = eeg_nemar_vis(EEG, varargin)
                 startLat = boundLat(indLat(1));
             end
         end
-        tmp = EEG.icaweights*EEG.icasphere*EEG.data(:,startLat:startLat+EEG.srate*2);
+        tmp = EEG.icaweights*EEG.icasphere*EEG.data([1:min(35, size(EEG.icaweights,1))], startLat:startLat+EEG.srate*2);
         tmp = normalize(tmp, 2); % normalize before plotting
         eegplot(tmp, 'srate', EEG.srate, ...
             'winlength', 2, 'eloc_file', iclocs, 'noui', 'on', 'title', '');
