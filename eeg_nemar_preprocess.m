@@ -9,21 +9,15 @@
 %   EEG      - [struct]  processed dataset
 %   status   - [boolean] whether dataset was processed successfully (1) or not (0)
 function [EEG, status] = eeg_nemar_preprocess(EEG, varargin)
-    if nargin > 1
-        pipeline = varargin{1};
-    else
-        pipeline = {'remove_chan', 'cleanraw', 'avg_ref', 'runica', 'iclabel'};
-    end
-    if nargin > 2
-        logdir = varargin{2};
-    else
-        logdir = './eeg_nemar_preprocess_logs';
-        logdirstatus = mkdir(logdir);
-    end
-    if nargin > 3
-        resave = varargin{3};
-    else
-        resave = true;
+    pipeline_all = {'remove_chan', 'cleanraw', 'avg_ref', 'runica', 'iclabel'};
+    opt = finputcheck(varargin, { ...
+        'pipeline'       'cell'      {}                      pipeline_all; ...  % preprocessing steps
+        'logdir'         'string'    {}                      './eeg_nemar_preprocess_logs'; ...
+        'modeval'        'string'    {'new', 'resume'}    'resume'; ...                                                      % if import mode, pipeline will overwrite existing outputdir. rerun won't 
+        'resave'         'boolean'   {}                      true; ...
+    }, 'eeg_nemar_preprocess');
+    if ~exist(opt.logdir, 'dir')
+        logdirstatus = mkdir(opt.logdir);
     end
 
     try
@@ -37,24 +31,37 @@ function [EEG, status] = eeg_nemar_preprocess(EEG, varargin)
         end
     end
 
+    resume = strcmp(opt.modeval, "resume");
+
     [filepath, filename, ext] = fileparts(EEG.filename);
-    log_file = fullfile(logdir, filename);
+    log_file = fullfile(opt.logdir, filename);
     if exist(log_file, 'file')
         delete(log_file)
     end
 
     diary(log_file);
     fprintf('Processing %s\n', fullfile(EEG.filepath, EEG.filename));
-    if isempty(pipeline)
-        error('No pipeline sequence provided')
-    end
-    status = zeros(1, numel(pipeline));
 
-    fprintf('Running pipeline sequence %s\n', strjoin(pipeline, '->'));
+    status_file = fullfile(opt.logdir, [filename '_preprocess.csv']);
+    % if status_file exists, read it
+    if exist(status_file, 'file') && strcmp(opt.modeval, "resume")
+        status_tbl = readtable(status_file);
+    else
+        status_tbl = array2table(zeros(1, numel(pipeline_all)));
+        status_tbl.Properties.VariableNames = pipeline_all;
+        writetable(status_tbl, status_file);
+    end
+    disp(status_tbl)
+
+    fprintf('Running pipeline sequence %s\n', strjoin(opt.pipeline, '->'));
     try
-        for i=1:numel(pipeline)
-            operation = pipeline{i};
+        for i=1:numel(opt.pipeline)
+            operation = opt.pipeline{i};
             if strcmp(operation, "remove_chan")
+                if resume && status_tbl.remove_chan
+                    fprintf('Skipping remove_chan\n');
+                    continue
+                end
                 % % remove non-ALLEEG channels (it is also possible to process ALLEEG data with non-ALLEEG data
                 % get non-EEG channels
                 % keep only EEG channels
@@ -79,9 +86,15 @@ function [EEG, status] = eeg_nemar_preprocess(EEG, varargin)
                         warning("No channel locations detected (for first EEG file)");
                     end
                 end
+
+                status_tbl.remove_chan = 1;
             end
 
             if strcmp(operation, "cleanraw")
+                if resume && status_tbl.cleanraw
+                    fprintf('Skipping cleanraw\n');
+                    continue
+                end
                 if EEG.trials > 1
                     error('Epoched data given to cleanraw');
                 end
@@ -96,24 +109,42 @@ function [EEG, status] = eeg_nemar_preprocess(EEG, varargin)
                     'WindowCriterionTolerances',[-Inf 7] ,'fusechanrej',1}; % based on Arnaud paper
                 % ALLEEG = parexec(ALLEEG, 'pop_clean_rawdata', opt.logdir, options{:});
                 EEG = pop_clean_rawdata( EEG, options{:});
+
+                status_tbl.cleanraw = 1;
             end
 
             if strcmp(operation, "avg_ref")
+                if resume && status_tbl.avg_ref
+                    fprintf('Skipping avg_ref\n');
+                    continue
+                end
                 % recompute average reference interpolating missing channels (and removing
                 % them again after average reference - STUDY functions handle them automatically)
                 options = {[], 'interpchan', []};
                 EEG = pop_reref( EEG,options{:});
+
+                status_tbl.avg_ref = 1;
             end
 
             if strcmp(operation, "runica")
+                if resume && status_tbl.runica
+                    fprintf('Skipping runica\n');
+                    continue
+                end
                 % run ICA reducing the dimention by 1 to account for average reference 
                 nChans = EEG.nbchan;
                 lrate = 0.00065/log(mean(nChans))/10; % not the runica default - suggested by Makoto approximately 12/22
                 options = {'icatype','runica','concatcond','on', 'pca',-1, 'extended', 1, 'lrate', lrate, 'maxsteps', 2000};
                 EEG = pop_runica(EEG, options{:});
+
+                status_tbl.runica = 1;
             end
 
             if strcmp(operation, "iclabel")
+                if resume && status_tbl.iclabel
+                    fprintf('Skipping iclabel\n');
+                    continue
+                end
                 % % run ICLabel and flag artifactual components
                 % if strcmp(EEG.etc.datatype, 'EEG')
                     options = {'default'};
@@ -121,16 +152,20 @@ function [EEG, status] = eeg_nemar_preprocess(EEG, varargin)
                     options = {[NaN NaN;0.9 1;0.9 1;NaN NaN;NaN NaN;NaN NaN;NaN NaN]};
                     EEG = pop_icflag( EEG, options{:});
                 % end
+                status_tbl.iclabel = 1;
             end
 
-            % if reached, the operation finished with no error
-            status(i) = 1;
-            if resave
+            % if reached, operation completed without error and result should be saved
+            if opt.resave
                 pop_saveset(EEG, 'filepath', EEG.filepath, 'filename', EEG.filename);
             end
+            % write status file
+            writetable(status_tbl, status_file);
         end
     catch ME
         fprintf('%s\n%s\n',ME.identifier, ME.getReport());
     end
+    
+    % close log file
     diary off
 end
