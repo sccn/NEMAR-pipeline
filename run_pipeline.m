@@ -14,7 +14,7 @@ opt = finputcheck(varargin, { ...
     'outputdir'               'string'    { }                     fullfile(nemar_path, 'processed', dsnumber); ...
     'logdir'                  'string'    {}                      fullfile(nemar_path, 'processed', dsnumber, 'logs'); ...
     'copycode'                'boolean'   {}                      true; ...
-    'modeval'                 'string'    {'import', 'rerun'}    'import'; ...                                                      % if import mode, pipeline will overwrite existing outputdir. rerun won't 
+    'modeval'                 'string'    {'new', 'resume'}       'new'; ...                                                      % if new mode, pipeline will overwrite existing outputdir. resume won't 
     'preprocess'              'boolean'   {}                      true; ...
     'preprocess_pipeline'     'cell'      {}                      {'remove_chan', 'cleanraw', 'avg_ref', 'runica', 'iclabel'}; ...  % preprocessing steps
     'vis'                     'boolean'   {}                      true; ...
@@ -39,7 +39,7 @@ end
 eeg_logdir = fullfile(opt.logdir, 'eeg_logs');
 log_file = fullfile(opt.logdir, 'matlab_log');
 codeDir = fullfile(opt.logdir, "code");
-if strcmp(opt.modeval, "import")
+if strcmp(opt.modeval, "new")
     % create output directories
     if opt.verbose
         fprintf('Output dir: %s\n', opt.outputdir);
@@ -101,8 +101,8 @@ end
 status_file = fullfile(opt.logdir, 'pipeline_status.csv');
 pipeline = opt.preprocess_pipeline;
 plots = opt.vis_plots; 
-if strcmp(opt.modeval, 'import')
-    % if rerun, it's assumed import was already successful
+if strcmp(opt.modeval, 'new')
+    % if resume, it's assumed import was already successful
     preproc_status = -1*ones(1, numel(pipeline));
     vis_status = -1*ones(1, numel(plots));
     dataqual_status = -1*ones(1, 1);
@@ -113,7 +113,7 @@ pop_editoptions( 'option_storedisk', 0);
 [STUDY, ALLEEG, dsname] = load_dataset(opt.bidspath, opt.outputdir, opt.modeval);
 
 % if reached here, import was successful. Rewrite report table
-if strcmp(opt.modeval, 'import')
+if strcmp(opt.modeval, 'new')
     create_status_table(status_file, "1", [pipeline plots "dataqual"], [preproc_status vis_status dataqual_status]);
 end
 
@@ -134,7 +134,7 @@ end
 if opt.preprocess
     parfor (i=1:numel(ALLEEG), opt.maxparpool)
         EEG = pop_loadset('filepath', ALLEEG(i).filepath, 'filename', ALLEEG(i).filename);
-        [~, preproc_status(i,:)] = eeg_nemar_preprocess(EEG, pipeline, eeg_logdir);
+        [~, preproc_status(i,:)] = eeg_nemar_preprocess(EEG, 'pipeline', pipeline, 'logdir', eeg_logdir, 'modeval', opt.modeval);
     end
     write_alleeg_status_table(ALLEEG, opt.modeval, fullfile(opt.logdir, 'preproc_status.mat'), pipeline, preproc_status);
 end
@@ -214,9 +214,9 @@ diary off
     end
 
     function status_tbl = write_alleeg_status_table(ALLEEG, mode, status_file, status_cols, values)
-        % mode: if 'rerun', check if there's a current status table from status_file and only modify it. 
-        %       if 'import' (anything else then 'rerun'), create new table and write to status_file
-        if strcmp(mode, 'rerun')
+        % mode: if 'resume', check if there's a current status table from status_file and only modify it. 
+        %       if 'new' (anything else then 'resume'), create new table and write to status_file
+        if strcmp(mode, 'resume')
             status_tbl = load(status_file);
             status_tbl = status_tbl.status_tbl;
             for c=1:numel(status_cols)
