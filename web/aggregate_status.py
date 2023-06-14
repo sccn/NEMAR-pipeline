@@ -4,7 +4,9 @@ import numpy as np
 import pandas as pd
 import os
 import datetime
-
+import argparse
+import subprocess
+import re
 raw_dir = "/data/qumulo/openneuro"
 processed_dir = "/data/qumulo/openneuro/processed"
 sccn_dir = "/var/local/www/eeglab/NEMAR"
@@ -18,14 +20,14 @@ def get_known_errors(matlab_log, batcherr_log):
     with open(matlab_log, 'r') as file:
         data = file.read()
         if "out of memory" in data.lower():
-            errors += "Out of memory\n"
+            errors += "OOM\n"
         if "too short" in data.lower():
             errors += "Data too short\n"
 
     with open(batcherr_log, 'r') as file:
         data = file.read()
         if "DUE TO TIME LIMIT" in data:
-            errors += "Cancelled due to time limit\n"
+            errors += "timeout\n"
     
     return errors
 
@@ -54,53 +56,63 @@ def append_modality(df):
 
 def append_latest_date(df):
     log_dir = os.path.join(processed_dir, df['dsnumber'][0], 'logs')
-    matlab_log = os.path.join(log_dir, 'matlab_log')
-    # if not os.path.isfile(matlab_log):
-        # print(f"matlab log not found for {df['dsnumber'][0]}")
-    # else:
+    manual_debug_note = os.path.join(log_dir, "debug", "manual_debug_note")
+    matlab_log = os.path.join(log_dir, "pipeline_status.csv")
     latest_date = max((datetime.datetime.fromtimestamp(os.path.getmtime(os.path.join(root, file)))
                         for root, _, files in os.walk(log_dir) for file in files if file != 'debug_note'))
-    df['latest_date'] = latest_date
-        # df['latest_date'] = datetime.datetime.fromtimestamp(os.path.getmtime(matlab_log))
+    # df['latest_date'] = latest_date
+    df['latest_date'] = datetime.datetime.fromtimestamp(os.path.getmtime(matlab_log))
+
+    df['latest_date_manual'] = datetime.datetime.fromtimestamp(os.path.getmtime(manual_debug_note))
     return df
 
-def append_debug(df):
+def append_debug(df, processing):
     '''
     Append debug note to dataframe
 
     '''
-    # notes = []
-    # for ds in df['dsnumber']:
-    #     # for each processed dataset
-        # path = os.path.join(processed_dir, ds)
     if len(df) > 1:
         raise ValueError('More than one dataset being processed')
     path = os.path.join(processed_dir, df['dsnumber'][0])
+    notes = ""
     if os.path.isdir(path):
-        # get debug note
-        debug_note = os.path.join(path, "logs", "debug", "debug_note")
-        if not os.path.isfile(debug_note) or os.stat(debug_note).st_size == 0:
-            # (re)create debug note if not exists or is empty
+        if check_status(df):
+            notes = "ok"
+        else:
+            # get debug note
+            debug_note = os.path.join(path, "logs", "debug", "debug_note")
             with open(debug_note, 'w') as file:
-                # put in default note for known issues
-                matlab_log = os.path.join(path, "logs", "matlab_log")
-                batcherr_log = os.path.join(processed_dir, "logs", df['dsnumber'][0] + ".err")
-                errors = get_known_errors(matlab_log, batcherr_log)
-                file.write(errors)
+                if df['dsnumber'][0] in processing:
+                    notes = "processing" 
+                else:
+                    # put in default note for known issues
+                    matlab_log = os.path.join(path, "logs", "matlab_log")
+                    batcherr_log = os.path.join(processed_dir, "logs", df['dsnumber'][0] + ".err")
+                    notes = get_known_errors(matlab_log, batcherr_log)
+                file.write(notes)
             try:
                 os.chmod(debug_note, 0o664) # add write permission to group
             except:
                 print(f'Cannot change permission for {debug_note}')
-
-        if check_status(df):
-            notes = "ok"
-        else:
-            with open(debug_note, 'r') as file:
-                data = file.read()
-                # put in default note for known issues
-                notes = data
-
         df['debug_note'] = notes
+
+        # manual debug note
+        manual_debug_note = os.path.join(path, "logs", "debug", "manual_debug_note")
+        manual_notes = ""
+        if not os.path.isfile(manual_debug_note) or os.stat(manual_debug_note).st_size == 0:
+            # (re)create debug note if not exists or is empty
+            with open(manual_debug_note, 'w') as file:
+                file.write("") # create empty file
+            try:
+                os.chmod(manual_debug_note, 0o664) # add write permission to group
+            except:
+                print(f'Cannot change permission for {manual_debug_note}')
+
+        with open(manual_debug_note, 'r') as file:
+            data = file.read()
+            # put in default note for known issues
+            manual_notes = data
+        df['manual_debug_note'] = manual_notes
 
     return df
 
@@ -110,7 +122,7 @@ def check_status(df):
     '''
     status = []
     for (columnName, series) in df.items():
-        if isinstance(series[0], str):
+        if columnName not in ["manual_debug_note", "debug_note"] and isinstance(series[0], str):
             counts = series[0].split('/')
             if len(counts) == 2:
                 status.append(int(counts[0]) / int(counts[1]))
@@ -131,40 +143,78 @@ def reformat_cell(df):
                 df.at[0,columnName] = reformatted
     return df
 
-def append_custom(df):
+def append_custom(df, processing):
     '''
     Append custom columns to dataframe
     '''
     if len(df) > 1:
         raise ValueError('More than one dataset being processed')
     df = append_modality(df)
-    df = append_debug(df)
+    df = append_debug(df, processing)
     df = append_latest_date(df)
     return df
     
-def get_pipeline_status():
-    frames = []
-    for f in os.listdir(processed_dir):
-        logfile.write(f'processing {f}\n')
-        path = os.path.join(processed_dir, f)
-        if os.path.isdir(path):
-            status_file = os.path.join(path, "logs", "pipeline_status.csv")
-            if os.path.isfile(status_file):
-                df = pd.read_csv(status_file)
-                df = append_custom(df)
-                df = reformat_cell(df)
-                frames.append(df)
+def get_processing_ds():
+    result = subprocess.run(["ssh", "dtyoung@login.expanse.sdsc.edu", "squeue -u dtyoung | grep ds00*"], 
+                        shell=False,
+                        stdout=subprocess.PIPE,
+                        stderr=subprocess.PIPE,
+                        check=False)
 
-    return pd.concat(frames)
+    result = result.stdout
+    pattern = rb"ds00\d{4}"
+    matches = re.findall(pattern, result)
+    return matches
+    
 
-final_df = get_pipeline_status()
+def get_pipeline_status(dsnumbers):
+    processing = get_processing_ds()
+    processing = [ds.decode('utf-8') for ds in processing]
+    if dsnumbers:
+        all_status = pd.read_csv(final_file)
+        for ds in dsnumbers:
+            df = all_status[all_status["dsnumber"] == ds].copy() 
+            df.index = [0]
+            df = append_custom(df, processing)
+            df = reformat_cell(df)
+            all_status.loc[all_status["dsnumber"] == ds] = df.to_numpy()
+        return all_status
+    else:
+        frames = []
+        for f in os.listdir(processed_dir):
+            logfile.write(f'processing {f}\n')
+            path = os.path.join(processed_dir, f)
+            if os.path.isdir(path):
+                status_file = os.path.join(path, "logs", "pipeline_status.csv")
+                if os.path.isfile(status_file):
+                    df = pd.read_csv(status_file)
+                    df = append_custom(df, processing)
+                    df = reformat_cell(df)
+                    frames.append(df)
 
-with open(final_file, 'w') as out:
-    final_df.to_csv(out, index=False)
-    logfile.write('writing csv\n')
+        all_status = pd.concat(frames)
+        # all_status.set_index('dsnumber', inplace=True)
+        return all_status
 
-with open(final_file_html, 'w') as out:
-    final_df.to_html(out, index=False)
-    logfile.write('writing html\n')
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(
+        description="Aggregating NEMAR pipeline status files"
+    )
+    parser.add_argument(
+        "--ds",
+        help="Comma-separated, non whitespace list of datasets to regenerate",
+        default=None
+    )
+    args = parser.parse_args()
 
-logfile.close()
+    final_df = get_pipeline_status(args.ds.split(',') if args.ds else None)
+
+    with open(final_file, 'w') as out:
+        final_df.to_csv(out, index=False)
+        logfile.write('writing csv\n')
+
+    with open(final_file_html, 'w') as out:
+        final_df.to_html(out, index=False, na_rep="")
+        logfile.write('writing html\n')
+
+    logfile.close()

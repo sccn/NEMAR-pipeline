@@ -12,6 +12,13 @@ elseif ($file == "ind") {
 elseif ($file == "sbatcherr") {
     $filepath = $base_path . "/logs/" . $dsnumber . ".err";
 }
+elseif ($file == "sbatchout") {
+    $filepath = $base_path . "/logs/" . $dsnumber . ".out";
+}
+else {
+    $dspath = $base_path . "/" . $dsnumber;
+    $filepath = searchFileRecursive($dspath, $file);
+}
 
 if (file_exists($filepath)) {
     $fileContent = file_get_contents($filepath);
@@ -21,4 +28,17 @@ if (file_exists($filepath)) {
     echo "File does not exist.";
 }
 
+function searchFileRecursive($directory, $filename) {
+    $iterator = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($directory));
+
+    foreach ($iterator as $file) {
+        if ($file->isFile()) {
+            if ($file->getFilename() === $filename) {
+                return $file->getPathname();
+            }
+        }
+    }
+
+    return "";
+}
 ?>

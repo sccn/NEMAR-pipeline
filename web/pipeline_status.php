@@ -61,14 +61,19 @@
 			    <button type="button" onclick="copyText('logDir')">Copy path</button>
                         </div>
                         <div class="form-group">
-                            <label for="version" class="col-form-label">MATLAB log:</label>
-                            <input type="text" class="form-control" id="matlabLog" name="matlabLog">
-			    <button type="button" onclick="copyText('matlabLog')">Copy path</button>
+                            <label for="version" class="col-form-label">Ind log dir:</label>
+                            <input type="text" class="form-control" id="indLogDir" name="indLogDir">
+			    <button type="button" onclick="copyText('indLogDir')">Copy path</button>
                         </div>
                         <div class="form-group">
                             <label for="doc" class="col-form-label">Debug note:</label>
                             <input class="form-control" id="note" name="note"></input>
 			    <button type="button" onclick="copyText('note')">Copy path</button>
+                        </div>
+                        <div class="form-group">
+                            <label for="doc" class="col-form-label">sbatch file:</label>
+                            <input class="form-control" id="sbatch" name="sbatch"></input>
+			    <button type="button" onclick="copyText('sbatch')">Copy path</button>
                         </div>
                         <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
                     </form>
@@ -143,7 +148,7 @@
 
             $("#statusTable").load('pipeline_status_all.html', function() {
 		    $('table').find('tr').each(function(){ 	
-			$(this).find('th').eq(-1).after('<th>HEADER</th>'); 	
+			$(this).find('th').eq(-1).after('<th>log_files</th>'); 	
 			$(this).find('td').eq(-1).after('<td>ROW</td>'); 
 		    });
 
@@ -160,7 +165,8 @@
 			var last_td = $(this).children().last();
 			last_td.html("<a data-toggle='modal' class='text-primary' data-target='#dsMatlabLogs' data-dsnumber='" + dsnumber + "' data-file='matlab'>MATLAB</a><br>");
 			last_td.append("<a data-toggle='modal' class='text-success' data-target='#dsIndLogs' data-dsnumber='" + dsnumber + "' data-file='ind'>Ind status</a><br>");
-			last_td.append("<a data-toggle='modal' class='text-danger' data-target='#dsMatlabLogs' data-dsnumber='" + dsnumber + "' data-file='sbatcherr'>Batch .err</a>");
+			last_td.append("<a data-toggle='modal' class='text-danger' data-target='#dsMatlabLogs' data-dsnumber='" + dsnumber + "' data-file='sbatcherr'>Batch .err</a><br>");
+			last_td.append("<a data-toggle='modal' class='text-info' data-target='#dsMatlabLogs' data-dsnumber='" + dsnumber + "' data-file='sbatchout'>Batch .out</a>");
 		    });
 
 	    });
@@ -170,8 +176,9 @@
 		var modal = $(this);
 		modal.find('#nemarpath').html('<a href="https://nemar.org/dataexplorer/detail?dataset_id=' + dsnumber + '">View on NEMAR</a>');
 		modal.find('#logDir').val('/expanse/projects/nemar/openneuro/processed/' + dsnumber + '/logs');
-		modal.find('#matlabLog').val('/expanse/projects/nemar/openneuro/processed/' + dsnumber + '/logs/matlab_log');
-		modal.find('#note').val('/expanse/projects/nemar/openneuro/processed/' + dsnumber + '/logs/debug/debug_note');
+		modal.find('#indLogDir').val('/expanse/projects/nemar/openneuro/processed/' + dsnumber + '/logs/eeg_logs');
+		modal.find('#note').val('/expanse/projects/nemar/openneuro/processed/' + dsnumber + '/logs/debug/manual_debug_note');
+		modal.find('#sbatch').val('/expanse/projects/nemar/openneuro/processed/logs/' + dsnumber + 'sbatch');
 	    });
 	    $('#dsMatlabLogs').on('show.bs.modal', function (event) {
 		var clicked = $(event.relatedTarget);

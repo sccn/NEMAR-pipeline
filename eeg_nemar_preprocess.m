@@ -52,6 +52,7 @@ function [EEG, status] = eeg_nemar_preprocess(EEG, varargin)
         writetable(status_tbl, status_file);
     end
     disp(status_tbl)
+    status = table2array(status_tbl);
 
     fprintf('Running pipeline sequence %s\n', strjoin(opt.pipeline, '->'));
     try
@@ -161,6 +162,7 @@ function [EEG, status] = eeg_nemar_preprocess(EEG, varargin)
             end
             % write status file
             writetable(status_tbl, status_file);
+            status = table2array(status_tbl);
         end
     catch ME
         fprintf('%s\n%s\n',ME.identifier, ME.getReport());

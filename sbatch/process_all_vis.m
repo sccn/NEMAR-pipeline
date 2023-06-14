@@ -6,7 +6,7 @@ for i=1:numel(dsfolders)
     
 	fprintf('Processing %s\n', dsnumber);
     try
-        run_pipeline(dsnumber, 'preprocess', false, 'vis', true, 'vis_plots', {'midraw', 'icaact'}, 'dataqual', false, 'maxparpool', 127, 'modeval', 'rerun');
+        run_pipeline(dsnumber, 'preprocess', false, 'vis', false, 'vis_plots', {'icaact'}, 'dataqual', false, 'maxparpool', 127, 'modeval', 'rerun');
     catch ME
         fprintf('%s\n', ME.identifier);
         fprintf('%s\n', ME.message);
