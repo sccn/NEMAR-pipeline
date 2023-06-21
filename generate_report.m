@@ -1,15 +1,21 @@
 function status = generate_report(ALLEEG, varargin)
-    import java.text.*
-    if nargin > 1
-        study_path = varargin{1}
-    else 
-        study_path = './dataqual_report'
-        mkdir(study_path)
+    import java.text.* % for json formatting
+    status = 0;
+    metrics_all = {'dataqual'}; % for now. In future it would be broken down, e.g. {'dataP', 'chanP', 'icaP'};
+    opt = finputcheck(varargin, { ...
+        'metrics'        'cell'    {}                        metrics_all; ...         % dataqual metrics to compute
+        'outputdir'      'string'    {}                      './dataqual_report'; ...   
+        'logdir'         'string'    {}                      './eeg_nemar_logs'; ...
+        'resave'         'boolean'   {}                      true; ...
+        'legacy'         'boolean'   {}                      false; ...
+    }, 'generate_report');
+    display(opt)
+    display(opt.outputdir)
+    if ~exist(opt.outputdir, 'dir')
+        mkdir(opt.outputdir);
     end
-    if nargin > 2
-        eeg_logdir = varargin{2}
-    else
-        eeg_logdir = study_path;
+    if ~exist(opt.logdir, 'dir')
+        mkdir(opt.logdir);
     end
 
     if ~exist('eeglab')
@@ -24,12 +30,34 @@ function status = generate_report(ALLEEG, varargin)
     goodDataPs = zeros(numel(ALLEEG),1);
     goodChanPs = zeros(numel(ALLEEG),1);
     goodICPs = zeros(numel(ALLEEG),1);
+
+    if ~opt.legacy
+        [filepath, filename, ext] = fileparts(ALLEEG(1).filename);
+        preprocess_status_file = fullfile(opt.logdir, [filename '_preprocess.csv']);
+        % if preprocess status_file doesn't exists, we're not running data quality
+        if ~exist(preprocess_status_file, 'file')
+            error('Preprocess status file not found. Data quality cannot be run without preprocess.')
+        end
+    end
+
     decFormatter = DecimalFormat;
     for i=1:numel(ALLEEG)
         EEG = ALLEEG(i);
         EEG = eeg_checkset(EEG, 'loaddata');
         [filepath, filename, ext] = fileparts(EEG.filename);
-        log_file = fullfile(eeg_logdir, filename);
+
+        log_file = fullfile(opt.logdir, filename);
+        % if status_file exists, read it
+        status_file = fullfile(opt.logdir, [filename '_dataqual.csv']);
+        if exist(status_file, 'file') 
+            status_tbl = readtable(status_file);
+        else
+            status_tbl = array2table(zeros(1, numel(metrics_all)));
+            status_tbl.Properties.VariableNames = metrics_all;
+            writetable(status_tbl, status_file);
+        end
+        disp(status_tbl)
+        % status = table2array(status_tbl);
 
         diary(log_file);
         try
@@ -41,8 +69,6 @@ function status = generate_report(ALLEEG, varargin)
 
             status(i) = 1;
 
-            % [dataP, chanP] = cleanraw_report(EEG, report_file);
-            %report.append_report('asrFail', 0, outpath, result_basename);
             cur_report = jsonread(report_file);
             if isfield(EEG.etc, 'clean_sample_mask')
                 goodDataPercent = round(100*EEG.pnts/numel(EEG.etc.clean_sample_mask), 2); % new change to clean_raw_data
@@ -106,6 +132,10 @@ function status = generate_report(ALLEEG, varargin)
             cur_report.linenoise_magn = sprintf('%.2fdB',linenoise_magn);
             jsonwrite(report_file, cur_report);
 
+            % if reached, operation completed without error
+            % write status file
+            status_tbl.dataqual = 1; % for now, later add more metrics
+            writetable(status_tbl, status_file);
         catch ME
             fprintf('%s\n%s\n',ME.identifier, ME.getReport());
         end
@@ -114,7 +144,7 @@ function status = generate_report(ALLEEG, varargin)
 
     % dataset level report
     if sum(goodDataPs) ~= 0
-        report_file = fullfile(study_path, 'dataqual.json');
+        report_file = fullfile(opt.outputdir, 'dataqual.json');
         fid = fopen(report_file,'w');
         fprintf(fid,'{}');
         fclose(fid);

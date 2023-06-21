@@ -28,6 +28,8 @@ def get_known_errors(matlab_log, batcherr_log):
         data = file.read()
         if "DUE TO TIME LIMIT" in data:
             errors += "timeout\n"
+        if "Error using parpool" in data:
+            errors += "parpool\n"
     
     return errors
 
@@ -57,11 +59,11 @@ def append_modality(df):
 def append_latest_date(df):
     log_dir = os.path.join(processed_dir, df['dsnumber'][0], 'logs')
     manual_debug_note = os.path.join(log_dir, "debug", "manual_debug_note")
-    matlab_log = os.path.join(log_dir, "pipeline_status.csv")
-    latest_date = max((datetime.datetime.fromtimestamp(os.path.getmtime(os.path.join(root, file)))
-                        for root, _, files in os.walk(log_dir) for file in files if file != 'debug_note'))
+    logfile = os.path.join(processed_dir, "logs", df['dsnumber'][0] + '.out')
+    # latest_date = max((datetime.datetime.fromtimestamp(os.path.getmtime(os.path.join(root, file)))
+                        # for root, _, files in os.walk(log_dir) for file in files if file != 'debug_note'))
     # df['latest_date'] = latest_date
-    df['latest_date'] = datetime.datetime.fromtimestamp(os.path.getmtime(matlab_log))
+    df['latest_batch_run'] = datetime.datetime.fromtimestamp(os.path.getmtime(logfile))
 
     df['latest_date_manual'] = datetime.datetime.fromtimestamp(os.path.getmtime(manual_debug_note))
     return df
@@ -166,6 +168,55 @@ def get_processing_ds():
     matches = re.findall(pattern, result)
     return matches
     
+def aggregate_ind_status(dsnumber):
+    log_dir = os.path.join(processed_dir, dsnumber, 'logs', 'eeg_logs')
+    frames = []
+    # so we also append the viz and dataqual columns to the ind df
+    other_cols = ['midraw', 'spectra', 'icaact', 'icmap', 'dataqual']
+    # print(log_dir)
+    # print(os.path.exists(log_dir))
+    if os.path.exists(log_dir):
+        for f in os.listdir(log_dir):
+            if f.endswith('preprocess.csv'): # get unique files
+                df = pd.read_csv(os.path.join(log_dir, f))
+                df.insert(0, 'set_file', f.split('.')[0])
+                for col in other_cols:
+                    df[col] = 0 # TODO might be string
+                
+                vis_status_file = os.path.join(log_dir, f[:-len('preprocess.csv')]+'vis.csv')
+                if os.path.exists(vis_status_file):
+                    df_vis = pd.read_csv(vis_status_file)
+                    for colname, val in df_vis.items():
+                        if colname in df:
+                            df[colname] = val[0]
+
+                dataqual_status_file = os.path.join(log_dir, f[:-len('preprocess.csv')]+'dataqual.csv')
+                if os.path.exists(dataqual_status_file):
+                    df_dataqual = pd.read_csv(dataqual_status_file)
+                    for colname, val in df_dataqual.items():
+                        if colname in df:
+                            df[colname] = val[0]
+                frames.append(df)
+    if len(frames) > 0:
+        all_status = pd.concat(frames)
+        with open(os.path.join(processed_dir, dsnumber, 'logs', 'ind_pipeline_status.csv'), 'w') as out:
+            all_status.to_csv(out, index=False)
+        
+        aggregated = all_status.sum()
+        final_status_df = frames[0].copy()
+        final_status_df = final_status_df.drop(columns=['set_file'])
+        final_status_df.insert(0, 'dsnumber', dsnumber)
+        final_status_df.insert(1, 'imported', 1 if aggregated['remove_chan'] > 0 else 0) # TODO MATLAB should generate this
+
+        nsetfiles = len(all_status)
+        for (col, val) in aggregated.items():
+            if col != 'dsnumber' and col != 'imported' and col != 'set_file':
+                final_status_df[col] = f'{int(val)}/{nsetfiles}'
+        with open(os.path.join(processed_dir, dsnumber, 'logs', 'pipeline_status.csv'), 'w') as out:
+            final_status_df.to_csv(out, index=False)
+        # print(final_status_df)
+        return final_status_df
+
 
 def get_pipeline_status(dsnumbers):
     processing = get_processing_ds()
@@ -173,7 +224,14 @@ def get_pipeline_status(dsnumbers):
     if dsnumbers:
         all_status = pd.read_csv(final_file)
         for ds in dsnumbers:
+            # print(f'processing {ds}')
+            # aggregate ind status files (new setup)
+            aggregate_ind_status(ds)
+            df_new = pd.read_csv(os.path.join(processed_dir, ds, 'logs', 'pipeline_status.csv'))
             df = all_status[all_status["dsnumber"] == ds].copy() 
+            for col, _ in df.items():
+                if col in df_new:
+                    df[col] = df_new[col][0]
             df.index = [0]
             df = append_custom(df, processing)
             df = reformat_cell(df)
@@ -182,18 +240,23 @@ def get_pipeline_status(dsnumbers):
     else:
         frames = []
         for f in os.listdir(processed_dir):
-            logfile.write(f'processing {f}\n')
-            path = os.path.join(processed_dir, f)
-            if os.path.isdir(path):
-                status_file = os.path.join(path, "logs", "pipeline_status.csv")
-                if os.path.isfile(status_file):
-                    df = pd.read_csv(status_file)
-                    df = append_custom(df, processing)
-                    df = reformat_cell(df)
-                    frames.append(df)
+            if f.startswith('ds'):
+                logfile.write(f'processing {f}\n')
+                # print(f'processing {f}')
+
+                # aggregate ind status files (new setup)
+                aggregate_ind_status(f)
+
+                path = os.path.join(processed_dir, f)
+                if os.path.isdir(path):
+                    status_file = os.path.join(path, "logs", "pipeline_status.csv")
+                    if os.path.isfile(status_file):
+                        df = pd.read_csv(status_file)
+                        df = append_custom(df, processing)
+                        df = reformat_cell(df)
+                        frames.append(df)
 
         all_status = pd.concat(frames)
-        # all_status.set_index('dsnumber', inplace=True)
         return all_status
 
 if __name__ == "__main__":
