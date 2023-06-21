@@ -1,38 +1,68 @@
+% NEMAR visualization pipeline
+% Required input:
+%   EEG      - [struct]  input dataset
+% Optional inputs:
+%   plots - [cell]    list of measures to plot
+%   logdir   - [string]  directory to log execution output
+%   resave   - [boolean] whether to save processed data back on disk. Default true
+% Output:
+%   EEG      - [struct]  plotted dataset
+%   status   - [boolean] whether visualization was successfully generated (1) or not (0)
 function [EEG, status] = eeg_nemar_vis(EEG, varargin)
-    if nargin > 1
-        plots = varargin{1};
-    else
-        plots = {'midraw', 'spectra', 'icaact', 'icmap'};
-    end
-    if nargin > 2
-        logdir = varargin{2};
-    else
-        logdir = './eeg_nemar_vis_logs';
-        status = mkdir(logdir)
+    plots_all = {'midraw', 'spectra', 'icaact', 'icmap'};
+    status = 0;
+    opt = finputcheck(varargin, { ...
+        'plots'          'cell'      {}                      plots_all; ...                     % visualization plots
+        'logdir'         'string'    {}                      './eeg_nemar_logs'; ...
+        'resave'         'boolean'   {}                      true; ...
+        'legacy'         'boolean'   {}                      false; ...
+    }, 'eeg_nemar_vis');
+    if ~exist(opt.logdir, 'dir')
+        logdirstatus = mkdir(opt.logdir);
     end
 
     try
         which eeglab;
     catch
+        warning('EEGLAB not found in path. Trying to add it from expanse...')
         addpath('/expanse/projects/nemar/dtyoung/NEMAR-pipeline/eeglab');
         eeglab nogui;
     end
 
     [filepath, filename, ext] = fileparts(EEG.filename);
-    log_file = fullfile(logdir, filename);
+    log_file = fullfile(opt.logdir, filename);
 
     diary(log_file);
-    if isempty(plots)
+    if isempty(opt.plots)
         error('No plots were requested')
     end
-    fprintf('Generating plots for %s\n', fullfile(EEG.filepath, EEG.filename));
-    status = zeros(1, numel(plots));
 
-    fprintf('Plots: %s\n', strjoin(plots, ', '));
+    if ~opt.legacy
+        preprocess_status_file = fullfile(opt.logdir, [filename '_preprocess.csv']);
+        % if preprocess status_file doesn't exists, we're not running visualization
+        if ~exist(preprocess_status_file, 'file')
+            error('Preprocess status file not found. Visualization cannot be run without preprocess.')
+        end
+    end
+
+    fprintf('Generating plots for %s\n', fullfile(EEG.filepath, EEG.filename));
+    % if status_file exists, read it
+    status_file = fullfile(opt.logdir, [filename '_vis.csv']);
+    if exist(status_file, 'file') 
+        status_tbl = readtable(status_file);
+    else
+        status_tbl = array2table(zeros(1, numel(plots_all)));
+        status_tbl.Properties.VariableNames = plots_all;
+        writetable(status_tbl, status_file);
+    end
+    disp(status_tbl)
+    status = table2array(status_tbl);
+
+    fprintf('Plots: %s\n', strjoin(opt.plots, ', '));
 
     try
-        for i=1:numel(plots)
-            plot = plots{i};
+        for i=1:numel(opt.plots)
+            plot = opt.plots{i};
             if strcmp(plot, 'midraw')
                 plot_raw_mid_segment(EEG);
             end
@@ -49,7 +79,16 @@ function [EEG, status] = eeg_nemar_vis(EEG, varargin)
             if strcmp(plot, 'icmap')
                 plot_ICLabel(EEG);
             end
-            status(i) = 1;
+
+            % if reached, operation completed without error and result should be saved
+            if opt.resave
+                pop_saveset(EEG, 'filepath', EEG.filepath, 'filename', EEG.filename);
+            end
+
+            % write status file
+            status_tbl.(plot) = 1;
+            writetable(status_tbl, status_file);
+            status = table2array(status_tbl);
         end
     catch ME
         fprintf('%s\n%s\n',ME.identifier, ME.getReport());

@@ -98,16 +98,16 @@ if opt.copycode
 end
 
 % set up pipeline sequence and report
-status_file = fullfile(opt.logdir, 'pipeline_status.csv');
+% status_file = fullfile(opt.logdir, 'pipeline_status.csv');
 pipeline = opt.preprocess_pipeline;
 plots = opt.vis_plots; 
-if strcmp(opt.modeval, 'new')
-    % if resume, it's assumed import was already successful
-    preproc_status = -1*ones(1, numel(pipeline));
-    vis_status = -1*ones(1, numel(plots));
-    dataqual_status = -1*ones(1, 1);
-    create_status_table(status_file, "0", [pipeline plots "dataqual"], [preproc_status vis_status dataqual_status]);
-end
+% if strcmp(opt.modeval, 'new')
+%     % if resume, it's assumed import was already successful
+%     preproc_status = -1*ones(1, numel(pipeline));
+%     vis_status = -1*ones(1, numel(plots));
+%     dataqual_status = -1*ones(1, 1);
+%     create_status_table(status_file, "0", [pipeline plots "dataqual"], [preproc_status vis_status dataqual_status]);
+% end
 
 pop_editoptions( 'option_storedisk', 0);
 [STUDY, ALLEEG, dsname] = load_dataset(opt.bidspath, opt.outputdir, opt.modeval);
@@ -136,69 +136,69 @@ if opt.preprocess
         EEG = pop_loadset('filepath', ALLEEG(i).filepath, 'filename', ALLEEG(i).filename);
         [~, preproc_status(i,:)] = eeg_nemar_preprocess(EEG, 'pipeline', pipeline, 'logdir', eeg_logdir, 'modeval', opt.modeval);
     end
-    write_alleeg_status_table(ALLEEG, opt.modeval, fullfile(opt.logdir, 'preproc_status.mat'), pipeline, preproc_status);
+    % write_alleeg_status_table(ALLEEG, opt.modeval, fullfile(opt.logdir, 'preproc_status.mat'), pipeline, preproc_status);
 end
 
 % visualization
 if opt.vis
     parfor (i=1:numel(ALLEEG), opt.maxparpool)
         EEG = pop_loadset('filepath', ALLEEG(i).filepath, 'filename', ALLEEG(i).filename);
-        [~, vis_status(i,:)] = eeg_nemar_vis(EEG, plots, eeg_logdir);
+        [~, vis_status(i,:)] = eeg_nemar_vis(EEG, 'plots', plots, 'logdir', eeg_logdir);
     end
-    write_alleeg_status_table(ALLEEG, opt.modeval, fullfile(opt.logdir, 'vis_status.mat'), plots, vis_status);
+    % write_alleeg_status_table(ALLEEG, opt.modeval, fullfile(opt.logdir, 'vis_status.mat'), plots, vis_status);
 end
 
 % data quality
 if opt.dataqual
-    dataqual_status = generate_report(ALLEEG, opt.outputdir, eeg_logdir);
-    write_alleeg_status_table(ALLEEG, opt.modeval, fullfile(opt.logdir, 'dataqual_status.mat'), {'dataqual'}, dataqual_status);
+    dataqual_status = generate_report(ALLEEG, 'outputdir', opt.outputdir, 'logdir', eeg_logdir);
+    % write_alleeg_status_table(ALLEEG, opt.modeval, fullfile(opt.logdir, 'dataqual_status.mat'), {'dataqual'}, dataqual_status);
 end
 
-% final step: generate summary status report
-disp('Generating status report tables');
-preproc_file = fullfile(opt.logdir, 'preproc_status.mat');
-if exist(preproc_file, 'file')
-    tbl = load(preproc_file);
-    if isfield(tbl, 'status_tbl')
-        tbl = tbl.status_tbl;
-        preproc_status = table2array(tbl);
-    end
-else
-    preproc_status = zeros(1, numel(pipeline));
-end
-vis_file = fullfile(opt.logdir, 'vis_status.mat');
-if exist(vis_file, 'file')
-    tbl = load(vis_file);
-    if isfield(tbl, 'status_tbl')
-        tbl = tbl.status_tbl;
-        vis_status = table2array(tbl);
-    end
-else
-    vis_status = zeros(1, numel(plots));
-end
-dataqual_file = fullfile(opt.logdir, 'dataqual_status.mat');
-if exist(dataqual_file, 'file')
-    tbl = load(dataqual_file);
-    if isfield(tbl, 'status_tbl')
-        tbl = tbl.status_tbl;
-        dataqual_status = table2array(tbl);
-    end
-else
-    dataqual_status = zeros(1, 1);
-end
-pipeline = {'remove_chan', 'cleanraw', 'avg_ref', 'runica', 'iclabel'};
-plots = {'midraw', 'spectra', 'icaact', 'icmap'};
-create_status_table(status_file, "1", [pipeline plots "dataqual"], [preproc_status vis_status dataqual_status]);
+% % final step: generate summary status report
+% disp('Generating status report tables');
+% preproc_file = fullfile(opt.logdir, 'preproc_status.mat');
+% if exist(preproc_file, 'file')
+%     tbl = load(preproc_file);
+%     if isfield(tbl, 'status_tbl')
+%         tbl = tbl.status_tbl;
+%         preproc_status = table2array(tbl);
+%     end
+% else
+%     preproc_status = zeros(1, numel(pipeline));
+% end
+% vis_file = fullfile(opt.logdir, 'vis_status.mat');
+% if exist(vis_file, 'file')
+%     tbl = load(vis_file);
+%     if isfield(tbl, 'status_tbl')
+%         tbl = tbl.status_tbl;
+%         vis_status = table2array(tbl);
+%     end
+% else
+%     vis_status = zeros(1, numel(plots));
+% end
+% dataqual_file = fullfile(opt.logdir, 'dataqual_status.mat');
+% if exist(dataqual_file, 'file')
+%     tbl = load(dataqual_file);
+%     if isfield(tbl, 'status_tbl')
+%         tbl = tbl.status_tbl;
+%         dataqual_status = table2array(tbl);
+%     end
+% else
+%     dataqual_status = zeros(1, 1);
+% end
+% pipeline = {'remove_chan', 'cleanraw', 'avg_ref', 'runica', 'iclabel'};
+% plots = {'midraw', 'spectra', 'icaact', 'icmap'};
+% create_status_table(status_file, "1", [pipeline plots "dataqual"], [preproc_status vis_status dataqual_status]);
 
-set_status_file = fullfile(opt.logdir, 'ind_pipeline_status.csv');
-set_files = {ALLEEG.filename}; 
-set_files = reshape(set_files, [numel(ALLEEG),1]);
-set_status = [set_files num2cell(preproc_status) num2cell(vis_status) num2cell(dataqual_status)];
-set_status_headers = [{'set_file'} pipeline plots {'dataqual'}];
-set_status_tbl = cell2table(set_status, 'VariableNames', set_status_headers);
-writetable(set_status_tbl, set_status_file);
-set_status_with_headers = [set_status_headers; set_status];
-save(fullfile(opt.logdir, 'set_status.mat'), 'set_status_with_headers');
+% set_status_file = fullfile(opt.logdir, 'ind_pipeline_status.csv');
+% set_files = {ALLEEG.filename}; 
+% set_files = reshape(set_files, [numel(ALLEEG),1]);
+% set_status = [set_files num2cell(preproc_status) num2cell(vis_status) num2cell(dataqual_status)];
+% set_status_headers = [{'set_file'} pipeline plots {'dataqual'}];
+% set_status_tbl = cell2table(set_status, 'VariableNames', set_status_headers);
+% writetable(set_status_tbl, set_status_file);
+% set_status_with_headers = [set_status_headers; set_status];
+% save(fullfile(opt.logdir, 'set_status.mat'), 'set_status_with_headers');
 
 disp('Finished running pipeline.');
 diary off
