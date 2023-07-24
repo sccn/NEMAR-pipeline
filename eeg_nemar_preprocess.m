@@ -8,6 +8,9 @@
 % Output:
 %   EEG      - [struct]  processed dataset
 %   status   - [boolean] whether dataset was processed successfully (1) or not (0)
+
+% To do: ignore non-EEG channel types instead of removing them
+
 function [EEG, status] = eeg_nemar_preprocess(EEG, varargin)
     pipeline_all = {'remove_chan', 'cleanraw', 'avg_ref', 'runica', 'iclabel'};
     opt = finputcheck(varargin, { ...
