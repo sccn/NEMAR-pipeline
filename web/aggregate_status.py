@@ -58,20 +58,21 @@ def append_modality(df):
 
 def append_latest_date(df):
     log_dir = os.path.join(processed_dir, df['dsnumber'][0], 'logs')
+    sbatch_log_dir = os.path.join(processed_dir, 'logs', df['dsnumber'][0])
     manual_debug_note = os.path.join(log_dir, "debug", "manual_debug_note")
     logfile = os.path.join(processed_dir, "logs", df['dsnumber'][0] + '.out')
-    # latest_date = max((datetime.datetime.fromtimestamp(os.path.getmtime(os.path.join(root, file)))
-                        # for root, _, files in os.walk(log_dir) for file in files if file != 'debug_note'))
-    # df['latest_date'] = latest_date
-    df['latest_batch_run'] = datetime.datetime.fromtimestamp(os.path.getmtime(logfile))
 
+    dates = [datetime.datetime.fromtimestamp(os.path.getmtime(os.path.join(root, file)))
+                        for root, _, files in os.walk(sbatch_log_dir) for file in files]
+    latest_date = max(dates) if len(dates) > 0 else datetime.datetime.fromtimestamp(os.path.getmtime(logfile))
+
+    df['latest_batch_run'] = latest_date
     df['latest_date_manual'] = datetime.datetime.fromtimestamp(os.path.getmtime(manual_debug_note))
     return df
 
 def append_debug(df, processing):
     '''
     Append debug note to dataframe
-
     '''
     if len(df) > 1:
         raise ValueError('More than one dataset being processed')
@@ -90,7 +91,7 @@ def append_debug(df, processing):
                     # put in default note for known issues
                     matlab_log = os.path.join(path, "logs", "matlab_log")
                     batcherr_log = os.path.join(processed_dir, "logs", df['dsnumber'][0] + ".err")
-                    notes = get_known_errors(matlab_log, batcherr_log)
+                    # notes = get_known_errors(matlab_log, batcherr_log) # No need to get known_errors anymore because there's no central log file 
                 file.write(notes)
             try:
                 os.chmod(debug_note, 0o664) # add write permission to group
@@ -172,16 +173,30 @@ def aggregate_ind_status(dsnumber):
     log_dir = os.path.join(processed_dir, dsnumber, 'logs', 'eeg_logs')
     frames = []
     # so we also append the viz and dataqual columns to the ind df
-    other_cols = ['midraw', 'spectra', 'icaact', 'icmap', 'dataqual']
+    all_cols = ['set_file', 'check_chanloc', 'remove_chan', 'cleanraw', 'avg_ref', 'runica', 'iclabel', 'midraw', 'spectra', 'icaact', 'icmap', 'dataqual']
     # print(log_dir)
     # print(os.path.exists(log_dir))
     if os.path.exists(log_dir):
         for f in os.listdir(log_dir):
             if f.endswith('preprocess.csv'): # get unique files
-                df = pd.read_csv(os.path.join(log_dir, f))
-                df.insert(0, 'set_file', f.split('.')[0])
-                for col in other_cols:
-                    df[col] = 0 # TODO might be string
+                # initialize
+                df = pd.DataFrame()
+                for col in all_cols:
+                    if col == 'set_file':
+                        df['set_file'] = [f.split('.')[0][:-len('_preprocess')]]
+                    else:
+                        df[col] = [0] # TODO might be string
+
+                # populate data from log files
+                df_preprocess = pd.read_csv(os.path.join(log_dir, f))
+                for colname, val in df_preprocess.items():
+                    if colname in df:
+                        df[colname] = val[0]
+
+                # hack fix to make backward compatible
+                if 'check_chanloc' not in df_preprocess:
+                    if df['avg_ref'][0] == 1:
+                        df['check_chanloc'] = 1
                 
                 vis_status_file = os.path.join(log_dir, f[:-len('preprocess.csv')]+'vis.csv')
                 if os.path.exists(vis_status_file):
@@ -206,7 +221,7 @@ def aggregate_ind_status(dsnumber):
         final_status_df = frames[0].copy()
         final_status_df = final_status_df.drop(columns=['set_file'])
         final_status_df.insert(0, 'dsnumber', dsnumber)
-        final_status_df.insert(1, 'imported', 1 if aggregated['remove_chan'] > 0 else 0) # TODO MATLAB should generate this
+        final_status_df.insert(1, 'imported', 1 if aggregated['remove_chan'] > 0 else 0) # if start preprocessing, import must have been successful
 
         nsetfiles = len(all_status)
         for (col, val) in aggregated.items():
@@ -220,7 +235,7 @@ def aggregate_ind_status(dsnumber):
 
 def get_pipeline_status(dsnumbers):
     processing = get_processing_ds()
-    processing = [ds.decode('utf-8') for ds in processing]
+    processing = list(set([ds.decode('utf-8') for ds in processing]))
     if dsnumbers:
         all_status = pd.read_csv(final_file)
         for ds in dsnumbers:

@@ -9,13 +9,14 @@
 %   EEG      - [struct]  processed dataset
 %   status   - [boolean] whether dataset was processed successfully (1) or not (0)
 function [EEG, status] = eeg_nemar_preprocess(EEG, varargin)
-    pipeline_all = {'remove_chan', 'cleanraw', 'avg_ref', 'runica', 'iclabel'};
+    pipeline_all = {'check_chanloc', 'remove_chan', 'cleanraw', 'avg_ref', 'runica', 'iclabel'};
     opt = finputcheck(varargin, { ...
         'pipeline'       'cell'      {}                      pipeline_all; ...  % preprocessing steps
-        'logdir'         'string'    {}                      './eeg_nemar_preprocess_logs'; ...
+        'logdir'         'string'    {}                      './eeg_nemar_logs'; ...
         'modeval'        'string'    {'new', 'resume'}    'resume'; ...                                                      % if import mode, pipeline will overwrite existing outputdir. rerun won't 
         'resave'         'boolean'   {}                      true; ...
     }, 'eeg_nemar_preprocess');
+    if isstr(opt), error(opt); end
     if ~exist(opt.logdir, 'dir')
         logdirstatus = mkdir(opt.logdir);
     end
@@ -34,6 +35,7 @@ function [EEG, status] = eeg_nemar_preprocess(EEG, varargin)
     resume = strcmp(opt.modeval, "resume");
 
     [filepath, filename, ext] = fileparts(EEG.filename);
+    disp(filename)
     log_file = fullfile(opt.logdir, filename);
     if exist(log_file, 'file')
         delete(log_file)
@@ -58,6 +60,20 @@ function [EEG, status] = eeg_nemar_preprocess(EEG, varargin)
     try
         for i=1:numel(opt.pipeline)
             operation = opt.pipeline{i};
+            if strcmp(operation, "check_chanloc")
+                if resume && status_tbl.check_chanloc
+                    fprintf('Skipping check_chanloc\n');
+                    continue
+                end
+                if isfield(EEG.chanlocs, 'theta')
+                    thetas = [EEG.chanlocs.theta];
+                    if isempty(thetas)
+                        error("Error: No channel locations detected");
+                    end
+                end
+                status_tbl.check_chanloc = 1;
+            end
+
             if strcmp(operation, "remove_chan")
                 if resume && status_tbl.remove_chan
                     fprintf('Skipping remove_chan\n');
@@ -81,13 +97,6 @@ function [EEG, status] = eeg_nemar_preprocess(EEG, varargin)
                 end
                 % ALLEEG = pop_select( ALLEEG,'nochannel',{'VEOG', 'Misc', 'ECG', 'M2'});
 
-                if isfield(EEG.chanlocs, 'theta')
-                    thetas = [EEG.chanlocs.theta];
-                    if isempty(thetas)
-                        warning("No channel locations detected (for first EEG file)");
-                    end
-                end
-
                 status_tbl.remove_chan = 1;
             end
 
@@ -104,8 +113,8 @@ function [EEG, status] = eeg_nemar_preprocess(EEG, varargin)
                 EEG = pop_rmbase( EEG, [],[]);
 
                 % clean data using the clean_rawdata plugin
-                options = {'FlatlineCriterion',5,'ChannelCriterion',0.85, ...
-                    'LineNoiseCriterion',4,'Highpass',[0.75 1.25] ,'BurstCriterion',50, ...
+                options = {'FlatlineCriterion',4,'ChannelCriterion',0.85, ...
+                    'LineNoiseCriterion',4,'Highpass',[0.75 1.25] ,'BurstCriterion',20, ...
                     'WindowCriterion',0.25,'BurstRejection','on','Distance','Euclidian', ...
                     'WindowCriterionTolerances',[-Inf 7] ,'fusechanrej',1}; % based on Arnaud paper
                 % ALLEEG = parexec(ALLEEG, 'pop_clean_rawdata', opt.logdir, options{:});
@@ -135,7 +144,8 @@ function [EEG, status] = eeg_nemar_preprocess(EEG, varargin)
                 % run ICA reducing the dimention by 1 to account for average reference 
                 nChans = EEG.nbchan;
                 lrate = 0.00065/log(mean(nChans))/10; % not the runica default - suggested by Makoto approximately 12/22
-                options = {'icatype','runica','concatcond','on', 'pca',-1, 'extended', 1, 'lrate', lrate, 'maxsteps', 2000};
+                % options = {'icatype','runica','concatcond','on', 'pca',-1, 'extended', 1, 'lrate', lrate, 'maxsteps', 2000};
+                options = {'icatype','runica','concatcond','on', 'extended', 1, 'lrate', 1e-5, 'maxsteps', 2000};
                 EEG = pop_runica(EEG, options{:});
 
                 status_tbl.runica = 1;
@@ -148,16 +158,17 @@ function [EEG, status] = eeg_nemar_preprocess(EEG, varargin)
                 end
                 % % run ICLabel and flag artifactual components
                 % if strcmp(EEG.etc.datatype, 'EEG')
-                    options = {'default'};
-                    EEG = pop_iclabel(EEG, options{:});
-                    options = {[NaN NaN;0.9 1;0.9 1;NaN NaN;NaN NaN;NaN NaN;NaN NaN]};
-                    EEG = pop_icflag( EEG, options{:});
+                options = {'default'};
+                EEG = pop_iclabel(EEG, options{:});
+                options = {[NaN NaN;0.9 1;0.9 1;NaN NaN;NaN NaN;NaN NaN;NaN NaN]};
+                EEG = pop_icflag( EEG, options{:});
                 % end
                 status_tbl.iclabel = 1;
             end
 
             % if reached, operation completed without error and result should be saved
             if opt.resave
+                disp('Saving EEG file')
                 pop_saveset(EEG, 'filepath', EEG.filepath, 'filename', EEG.filename);
             end
             % write status file

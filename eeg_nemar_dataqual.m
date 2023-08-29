@@ -1,0 +1,229 @@
+function eeg_nemar_dataqual(EEG, varargin)
+    import java.text.* % for json formatting
+    metrics_all = {'dataqual'}; % for now. In future it would be broken down, e.g. {'dataP', 'chanP', 'icaP'};
+    opt = finputcheck(varargin, { ...
+        'metrics'        'cell'    {}                        metrics_all; ...         % dataqual metrics to compute
+        'outputdir'      'string'    {}                      EEG.filepath; ...   
+        'logdir'         'string'    {}                      './eeg_nemar_logs'; ...
+        'legacy'         'boolean'   {}                      false; ...
+    }, 'generate_report');
+    if isstr(opt), error(opt); end
+    if ~exist(opt.outputdir, 'dir')
+        mkdir(opt.outputdir);
+    end
+    if ~exist(opt.logdir, 'dir')
+        mkdir(opt.logdir);
+    end
+
+    if ~exist('eeglab')
+        addpath('/expanse/projects/nemar/dtyoung/NEMAR-pipeline/eeglab');
+        eeglab nogui;
+    end
+    if ~exist('jsonread')
+        addpath('/expanse/projects/nemar/dtyoung/NEMAR-pipeline/JSONio');
+    end
+
+    if ~opt.legacy
+        [~, filename, ext] = fileparts(EEG.filename);
+        preprocess_status_file = fullfile(opt.logdir, [filename '_preprocess.csv']);
+        % if preprocess status_file doesn't exists, we're not running data quality
+        if ~exist(preprocess_status_file, 'file')
+            error('Preprocess status file not found. Data quality cannot be run without preprocess.')
+        end
+    end
+
+    decFormatter = DecimalFormat;
+    [~, filename, ext] = fileparts(EEG.filename);
+
+    log_file = fullfile(opt.logdir, filename);
+    status_file = fullfile(opt.logdir, [filename '_dataqual.csv']);
+    status_tbl = array2table(zeros(1, numel(metrics_all)));
+    status_tbl.Properties.VariableNames = metrics_all;
+    writetable(status_tbl, status_file);
+    disp(status_tbl)
+
+    diary(log_file);
+    try
+        fprintf('Generating reports for %s\n', fullfile(EEG.filepath, EEG.filename));
+        report_file = fullfile(opt.outputdir, [EEG.filename(1:end-4) '_dataqual.json']);
+        fid = fopen(report_file,'w');
+        fprintf(fid,'{}');
+        fclose(fid);
+
+        cur_report = jsonread(report_file);
+        if isfield(EEG.etc, 'clean_sample_mask')
+            goodDataPercent = round(100*EEG.pnts/numel(EEG.etc.clean_sample_mask), 2); % new change to clean_raw_data
+            cur_report.nGoodData = char(decFormatter.format(EEG.pnts));
+            cur_report.goodDataPercent = sprintf('%s of %s (%.0f%%)', char(decFormatter.format(EEG.pnts)), char(decFormatter.format(numel(EEG.etc.clean_sample_mask))), goodDataPercent);
+            cur_report.goodDataPercentRaw = sprintf('%.0f', goodDataPercent);
+        else
+            cur_report.goodDataFail = 1;
+            warning('Warning: clean_sample_mask not found');
+        end
+        jsonwrite(report_file, cur_report);
+
+        if isfield(EEG.etc, 'clean_channel_mask')
+            goodChanPercent = round(100*EEG.nbchan/numel(EEG.etc.clean_channel_mask), 2);
+            cur_report.nGoodChans = EEG.nbchan;
+            cur_report.goodChansPercent = goodChanPercent;
+            cur_report.goodChansPercent= sprintf('%d of %d (%.0f%%)', EEG.nbchan, numel(EEG.etc.clean_channel_mask), goodChanPercent);
+            cur_report.goodChansPercentRaw = sprintf('%.0f', goodChanPercent);
+        else
+            cur_report.goodChanFail = 1;
+            warning('Warning: clean_channel_mask not found');
+        end
+        jsonwrite(report_file, cur_report);
+
+        cur_report = jsonread(report_file);
+        if isfield(EEG, 'icaact') && ~isempty(EEG.icaact)
+            cur_report.icaFail = 0;
+            rejected_ICs = sum(EEG.reject.gcompreject);
+            numICs = EEG.nbchan-1;
+            cur_report.nICs = numICs;
+            cur_report.nGoodICs = numICs-rejected_ICs;
+            cur_report.goodICA = sprintf('%d of %d (%.0f%%)', numICs-rejected_ICs, numICs, round(100*(numICs-rejected_ICs)/numICs, 2));
+
+            goodICPercent = round(100*(numICs-rejected_ICs)/numICs, 2);
+            cur_report.goodICAPercentRaw = sprintf('%.0f', goodICPercent);
+        else
+            cur_report.icaFail = 1;
+            warning('Warning: ICA report failed');
+        end
+        jsonwrite(report_file, cur_report);
+
+        cur_report = jsonread(report_file);
+        if isfield(EEG, 'icaweights') && ~isempty(EEG.icaweights) && isfield(EEG, 'icasphere') && ~isempty(EEG.icasphere)
+            cur_report.mirFail = 0;
+            [mir_mean, mir_std, ~] = mir(EEG.data, EEG.icaweights * EEG.icasphere)
+            cur_report.mir = sprintf('%.2f (%.2f stdev)', mir_mean, mir_std);
+        else
+            cur_report.mirFail = 1;
+            warning('Warning: MIR report failed');
+        end
+        jsonwrite(report_file, cur_report);
+
+        % magnitude of line noise
+        cur_report = jsonread(report_file);
+        g = finputcheck({}, { 'freq'    'integer' []         [6, 10, 22]; ...
+                    'freqrange'   'integer'   []         [1 70]; ...
+                    'percent'   'integer'    [], 10});
+        [spec, freqs] = spectopo(EEG.data, 0, EEG.srate, 'freqrange', g.freqrange, 'title', '', 'chanlocs', EEG.chanlocs, 'percent', g.percent,'plot', 'off');
+        [~,ind50]=min(abs(freqs-50));
+        freq_50 = mean(spec(:, ind50));
+        [~,ind60]=min(abs(freqs-60));
+        freq_60 = mean(spec(:, ind60));
+        if freq_50 > freq_60
+            linenoise_magn = freq_50 - mean(mean(spec(:, [ind50-6:ind50-2 ind50+2:ind50+6]), 1));
+        else
+            linenoise_magn = freq_60 - mean(mean(spec(:, [ind60-6:ind60-2 ind60+2:ind60+6]), 1));
+        end
+        cur_report.linenoise_magn = sprintf('%.2fdB',linenoise_magn);
+        jsonwrite(report_file, cur_report);
+
+        % if reached, operation completed without error
+        % write status file
+        status_tbl.dataqual = 1; % for now, later add more metrics
+        writetable(status_tbl, status_file);
+        disp(status_tbl)
+    catch ME
+        fprintf('%s\n%s\n',ME.identifier, ME.getReport());
+    end
+    diary off;
+
+    function [mutual_info,mutual_info_var, detailed_mir] = mir(data,linT)
+        %MIR computes the mutual information reduction by a linear transformation
+        %   It so happends that simple codes are being used as event types in
+        %   EEG files. Such codes would be problamtic if proper descitiption is
+        %   not attached. A simple fix can be replacing the event codes with their
+        %   short descitpiotn using a lookup table.
+        %
+        %   INPUTS:
+        %       data
+        %           An [x t] array, usually EEG.data,  where the rows are the
+        %           channels and the columns are the time frames.
+        %       linT
+        %           The linear transformation matrix, usually W * S, which should
+        %           is expected (but not necessarily) to be of size [x x].
+        %
+        %   OUTPUTS:
+        %       mir
+        %           The overal MIR across all channels
+        %       mir_var
+        %           The variance of the MIR across channels
+        %       detailed_mir
+        %           NOT_YET_IMPLEMENTED The vector containing the MIR per channel, i.e., how much
+        %           infomration of each channel is reduced.
+        %   
+        % (c) Seyed Yahya Shirazi, 06/2023 UCSD, INC, SCCN, from github.com/bigdelys/pre_ICA_Cleaing/getMIR.m
+        
+        [hx,vx] = getent4(robust_sphering_matrix(data) * data); % sphereing is needed to make sure that the MIR is only related to ICA
+        
+        y = linT*data;
+        
+        [hy,vy] = getent4(y);
+        
+        mutual_info = sum(log(abs(eig(W)))) + sum(hx) - sum(hy);
+        
+        if nargout > 1
+            mutual_info_var = (sum(vx)+sum(vy))/N;
+        elseif nargout > 2
+            detailed_mir = []; % not yet implemented
+        end
+        
+        function [Hu,v] = getent4(u,nbins)
+            % function [Hu,deltau] = getent2(u,nbins)
+            %
+            % Calculate nx1 marginal entropies of components of u.
+            %
+            % Inputs:
+            %           u       Matrix (n by N) of nu time series.
+            %           nbins   Number of bins to use in computing pdfs. Default is
+            %                   min(100,sqrt(N)).
+            %
+            % Outputs:
+            %           Hu      Vector n by 1 differential entropies of rows of u.
+            %           v       Variance of entropy estimates in Hu
+            %
+            
+            [nu,Nu] = size(u);
+            if nargin < 2 || isempty(nbins)
+                nbins = round(3*log2(1+Nu/10));
+            end
+            
+            Hu = zeros(nu,1);
+            deltau = zeros(nu,1);
+            for i = 1:nu
+                umax = max(u(i,:));
+                umin = min(u(i,:));
+                deltau(i) = (umax-umin)/nbins;
+                u(i,:) = 1 + round((nbins - 1) * (u(i,:) - umin) / (umax - umin));
+            
+                pmfr = diff([0 find(diff(sort(u(i,:)))) Nu])/Nu;
+                Hu(i) = -sum(pmfr.*log(pmfr));
+                v(i) = sum(pmfr.*(log(pmfr).^2)) - Hu(i)^2;
+                Hu(i) = Hu(i) + (nbins-1)/(2*Nu) + log(deltau(i));
+            end
+        end
+        function [robustSphering, mixing, covarianceMatrix] = robust_sphering_matrix(X)
+            % [robustSphering mixing] = robust_sphering_matrix(X);
+            % X is channel x times data, e.g. EEG.data
+            
+            [C,S] = size(X);
+            X = X';
+            blocksize = 10;
+            blocksize = max(blocksize,ceil((C*C*S*8*3*2)/hlp_memfree));
+            
+            % calculate the sample covariance matrices U (averaged in blocks of blocksize successive samples)
+            U = zeros(length(1:blocksize:S),C*C);
+            for k=1:blocksize
+                range = min(S,k:blocksize:(S+k-1));
+                U = U + reshape(bsxfun(@times,reshape(X(range,:),[],1,C),reshape(X(range,:),[],C,1)),size(U));
+            end
+            
+            % get the mixing matrix M
+            covarianceMatrix = real(reshape(block_geometric_median(U/blocksize),C,C));
+            mixing = sqrtm(covarianceMatrix);
+            robustSphering = inv(mixing);
+        end
+    end
+end

@@ -18,6 +18,6 @@ echo "#SBATCH --ntasks-per-node=1" >> $sbatchfile
 echo "" >> $sbatchfile
 echo "cd /home/dtyoung/NEMAR-pipeline" >> $sbatchfile
 echo "module load matlab/2022b" >> $sbatchfile
-echo "matlab -nodisplay -r \"run_pipeline('$dsnumber', 'maxparpool', 16);\"" >> $sbatchfile
+echo "matlab -nodisplay -r \"run_pipeline('$dsnumber', 'maxparpool', 4, 'modeval', 'resume');\"" >> $sbatchfile
 
 sbatch $sbatchfile
