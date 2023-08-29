@@ -4,7 +4,6 @@
 % Optional inputs:
 %   plots - [cell]    list of measures to plot
 %   logdir   - [string]  directory to log execution output
-%   resave   - [boolean] whether to save processed data back on disk. Default true
 % Output:
 %   EEG      - [struct]  plotted dataset
 %   status   - [boolean] whether visualization was successfully generated (1) or not (0)
@@ -14,9 +13,9 @@ function [EEG, status] = eeg_nemar_vis(EEG, varargin)
     opt = finputcheck(varargin, { ...
         'plots'          'cell'      {}                      plots_all; ...                     % visualization plots
         'logdir'         'string'    {}                      './eeg_nemar_logs'; ...
-        'resave'         'boolean'   {}                      true; ...
         'legacy'         'boolean'   {}                      false; ...
     }, 'eeg_nemar_vis');
+    if isstr(opt), error(opt); end
     if ~exist(opt.logdir, 'dir')
         logdirstatus = mkdir(opt.logdir);
     end
@@ -29,6 +28,7 @@ function [EEG, status] = eeg_nemar_vis(EEG, varargin)
         eeglab nogui;
     end
 
+    EEG
     [filepath, filename, ext] = fileparts(EEG.filename);
     log_file = fullfile(opt.logdir, filename);
 
@@ -46,15 +46,11 @@ function [EEG, status] = eeg_nemar_vis(EEG, varargin)
     end
 
     fprintf('Generating plots for %s\n', fullfile(EEG.filepath, EEG.filename));
-    % if status_file exists, read it
     status_file = fullfile(opt.logdir, [filename '_vis.csv']);
-    if exist(status_file, 'file') 
-        status_tbl = readtable(status_file);
-    else
-        status_tbl = array2table(zeros(1, numel(plots_all)));
-        status_tbl.Properties.VariableNames = plots_all;
-        writetable(status_tbl, status_file);
-    end
+    % Always run vis pipeline from scratch
+    status_tbl = array2table(zeros(1, numel(plots_all)));
+    status_tbl.Properties.VariableNames = plots_all;
+    writetable(status_tbl, status_file);
     disp(status_tbl)
     status = table2array(status_tbl);
 
@@ -80,15 +76,11 @@ function [EEG, status] = eeg_nemar_vis(EEG, varargin)
                 plot_ICLabel(EEG);
             end
 
-            % if reached, operation completed without error and result should be saved
-            if opt.resave
-                pop_saveset(EEG, 'filepath', EEG.filepath, 'filename', EEG.filename);
-            end
-
             % write status file
             status_tbl.(plot) = 1;
             writetable(status_tbl, status_file);
             status = table2array(status_tbl);
+            disp(status_tbl)
         end
     catch ME
         fprintf('%s\n%s\n',ME.identifier, ME.getReport());
@@ -206,7 +198,8 @@ function [EEG, status] = eeg_nemar_vis(EEG, varargin)
                 startLat = boundLat(indLat(1));
             end
         end
-        tmp = EEG.icaweights*EEG.icasphere*EEG.data([1:min(35, size(EEG.icaweights,1))], startLat:startLat+EEG.srate*2);
+        tmp = EEG.icaweights*EEG.icasphere*EEG.data(:, startLat:startLat+EEG.srate*2);
+        tmp = tmp([1:min(35, size(EEG.icaweights,1))],:); % plot only maximally first 35 ICs
         tmp = normalize(tmp, 2); % normalize before plotting
         eegplot(tmp, 'srate', EEG.srate, ...
             'winlength', 2, 'eloc_file', iclocs, 'noui', 'on', 'title', '');
