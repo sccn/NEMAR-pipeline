@@ -89,7 +89,7 @@ if opt.copycode
         disp("Creating code dir and copying pipeline code");
     end
     mkdir(codeDir)
-    scripts = {'load_dataset.m', 'run_pipeline.m', 'eeg_nemar_preprocess.m', 'eeg_nemar_vis.m', 'generate_report.m'};
+    scripts = {'load_dataset.m', 'run_pipeline.m', 'eeg_nemar_preprocess.m', 'eeg_nemar_vis.m', 'eeg_nemar_dataqual.m'};
     for s=1:numel(scripts)
         script_src = fullfile(eeglabroot, scripts{s});
         script_dest = fullfile(codeDir, scripts{s});

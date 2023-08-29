@@ -48,7 +48,7 @@ uigeom = { [1] [1 2 0.4] [1 2 0.4] [1 2 0.4] [1] };
 
 [~,~,~, res] = inputgui('geometry', uigeom, 'uilist', uilist);
 if isempty(res) || isempty(res.bids_select)
-    disp('Abord')
+    disp('Abort')
     return
 end
 
@@ -59,11 +59,11 @@ if ~isequal(bidsName(1:2), 'ds')
     error('Not a BIDS folder')
 end
 
-otherOtions = { 'modeval', 'new' };
-command = sprintf('\nrun_pipeline(''%s'', ''subjects'', [%s], ''outputFolder'', ''%s'', %s);\n\n', bidsName, res.subjects, res.out_select, vararg2str(otherOtions));
+otherOtions = {'modeval', 'new', 'preprocess', true, 'vis', false, 'dataqual', false, 'preprocess_pipeline', {'check_chanloc', 'remove_chan'}, 'run_local', true, };
+command = sprintf('\nrun_pipeline(''%s'', ''subjects'', [%s], ''outputdir'', ''%s'',  ''logdir'', ''%s'', %s);\n\n', bidsName, res.subjects, res.out_select, [res.out_select '/logs'], vararg2str(otherOtions));
 
 fprintf(command);
-% eval(command)
+eval(command)
 
 
 
