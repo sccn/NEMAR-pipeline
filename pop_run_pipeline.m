@@ -1,0 +1,69 @@
+% GUI function for NEMAR
+
+function res = pop_run_pipeline(varargin)
+
+if ~isempty(varargin)
+    command = varargin{1};
+    fig     = varargin{2};
+    switch varargin{1}
+        case 'bids_select'
+            res = uigetdir;
+            if isequal(res, 0)
+                return;
+            end
+            set(findobj(gcbf, 'tag', 'bids_select'), 'string', res );
+            [~,bidsName] = fileparts(res);
+            set(findobj(gcbf, 'tag', 'out_select'), 'string', fullfile('/expanse/projects/nemar/Annalisa/Inprogress/', [bidsName '-debug'] ));
+        case 'out_select'
+            res = uigetdir;
+            if isequal(res, 0)
+                return;
+            end
+            set(findobj(gcbf, 'tag', 'out_select'), 'string', res );
+        otherwise
+            error([ 'Unknown command ''' command '''' ]);
+    end
+    return
+end
+
+bids_select = 'pop_run_pipeline(''bids_select'', gcbf);';
+out_select  = 'pop_run_pipeline(''out_select'', gcbf);';
+
+uilist = { { 'style' 'text' 'string' 'NEMAR pipeline' 'fontweight' 'bold' } ...
+           ...
+           { 'style' 'text' 'string' 'Select BIDS' } ...
+           { 'style' 'edit' 'string' '' 'tag' 'bids_select' } ...
+           { 'style' 'pushbutton' 'string' '...' 'callback' bids_select } ...
+           ...
+           { 'style' 'text' 'string' 'Output folder' } ...
+           { 'style' 'edit' 'string' '' 'tag' 'out_select'  } ...
+           { 'style' 'pushbutton' 'string' '...' 'callback' out_select } ...
+           ...
+           { 'style' 'text' 'string' 'Subject index(ices)' } ...
+           { 'style' 'edit' 'string' '' 'tag' 'subjects' } ...
+           { } ...
+           ...
+           { 'style' 'checkbox' 'string' 'Do a final clean run to update NEMAR' 'tag' 'clean_run' } };
+uigeom = { [1] [1 2 0.4] [1 2 0.4] [1 2 0.4] [1] };
+
+[~,~,~, res] = inputgui('geometry', uigeom, 'uilist', uilist);
+if isempty(res) || isempty(res.bids_select)
+    disp('Abord')
+    return
+end
+
+% Do not forget to print the command line so Annalisa can copy and past in
+% a bug report
+[~,bidsName] = fileparts(res.bids_select);
+if ~isequal(bidsName(1:2), 'ds')
+    error('Not a BIDS folder')
+end
+
+otherOtions = { 'modeval', 'new' };
+command = sprintf('\nrun_pipeline(''%s'', ''subjects'', [%s], ''outputFolder'', ''%s'', %s);\n\n', bidsName, res.subjects, res.out_select, vararg2str(otherOtions));
+
+fprintf(command);
+% eval(command)
+
+
+

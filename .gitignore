@@ -1,3 +1,4 @@
+*.asv
 eeglab/*
 plugins/
 temp/
