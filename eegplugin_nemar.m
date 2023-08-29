@@ -26,13 +26,9 @@ if nargin < 3
 end
 
 % add items to EEGLAB tools menu
-bids = findobj(fig, 'label', 'BIDS tools');
-if isempty(bids)
-    menui3 = findobj(fig, 'label', 'File');
-    bids = uimenu( menui3, 'label', 'BIDS tools', 'separator', 'on', 'position', 5, 'userdata', 'startup:on;study:on');
-end
+menui3 = findobj(fig, 'label', 'File');
 
-uimenu( bids, 'label', 'Run NEMAR pipeline', ...
+uimenu( menui3, 'label', 'Run NEMAR pipeline', ...
     'callback', 'pop_run_pipeline;', 'userdata', 'startup:on;study:on');
 
 
