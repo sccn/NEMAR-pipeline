@@ -1,10 +1,10 @@
 function eeg_run_pipeline(dsnumber, filepath, varargin)
 nemar_path = '/expanse/projects/nemar/openneuro';
-eeglabroot = '/expanse/projects/nemar/dtyoung/NEMAR-pipeline';
-
+eeglabroot = '/expanse/projects/nemar/eeglab';
+pipelineroot = fullfile(eeglabroot,'plugins', 'NEMAR-pipeline');
+addpath(fullfile(pipelineroot,'JSONio'));
 if isempty(which('finputcheck'))
-    addpath(fullfile(eeglabroot,'eeglab'));
-    addpath(fullfile(eeglabroot,'JSONio'));
+    addpath(eeglabroot);
     eeglab nogui;
 end
 
@@ -32,8 +32,7 @@ if isstr(opt), error(opt); end
 opt
 % reload eeglab if different version specified
 if ~strcmp(eeglabroot, opt.eeglabroot)
-    addpath(fullfile(opt.eeglabroot,'eeglab'));
-    addpath(fullfile(opt.eeglabroot,'JSONio'));
+    addpath(opt.eeglabroot);
     eeglab nogui;
     if opt.verbose
 	which pop_importbids;

@@ -1,0 +1,11 @@
+[{
+    "operation": "summarize_column_values",
+    "description": "Summarize the column values in an excerpt.",
+    "parameters": {
+        "summary_name": "column_values",
+        "summary_filename": "column_values",
+        "skip_columns": ["onset", "duration", "sample", "HED"],
+        "value_columns": ["stim_file", "response_time"],
+        "max_categorical": 100
+    }
+ }]

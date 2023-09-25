@@ -1,0 +1,13 @@
+#!/bin/bash
+#SBATCH -J hed-summary
+#SBATCH --partition=shared
+#SBATCH --nodes=1
+#SBATCH --mem=128G
+#SBATCH --account=csd403
+#SBATCH --no-requeue
+#SBATCH -t 48:00:00
+#SBATCH --ntasks-per-node=1
+#SBATCH --output="/home/dtyoung/NEMAR-pipeline/HED/summary/hed_summary.out"
+#SBATCH -e /home/dtyoung/NEMAR-pipeline/HED/summary/hed_summary.err
+cd /home/dtyoung/NEMAR-pipeline/HED/summary
+python run_hed_summary.py
