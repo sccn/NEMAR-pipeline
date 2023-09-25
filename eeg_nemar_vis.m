@@ -24,7 +24,7 @@ function [EEG, status] = eeg_nemar_vis(EEG, varargin)
         which eeglab;
     catch
         warning('EEGLAB not found in path. Trying to add it from expanse...')
-        addpath('/expanse/projects/nemar/dtyoung/NEMAR-pipeline/eeglab');
+        addpath('/expanse/projects/nemar/eeglab');
         eeglab nogui;
     end
 

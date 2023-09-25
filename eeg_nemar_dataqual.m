@@ -90,17 +90,21 @@ function eeg_nemar_dataqual(EEG, varargin)
             warning('Warning: ICA report failed');
         end
         jsonwrite(report_file, cur_report);
-
+        
+        % MIR
+        %{
         cur_report = jsonread(report_file);
+        
         if isfield(EEG, 'icaweights') && ~isempty(EEG.icaweights) && isfield(EEG, 'icasphere') && ~isempty(EEG.icasphere)
             cur_report.mirFail = 0;
-            [mir_mean, mir_std, ~] = mir(EEG.data, EEG.icaweights * EEG.icasphere)
+            [mir_mean, mir_std, ~] = mir(EEG.data, EEG.icaweights * EEG.icasphere);
             cur_report.mir = sprintf('%.2f (%.2f stdev)', mir_mean, mir_std);
         else
             cur_report.mirFail = 1;
             warning('Warning: MIR report failed');
         end
         jsonwrite(report_file, cur_report);
+        %}
 
         % magnitude of line noise
         cur_report = jsonread(report_file);
@@ -224,6 +228,124 @@ function eeg_nemar_dataqual(EEG, varargin)
             covarianceMatrix = real(reshape(block_geometric_median(U/blocksize),C,C));
             mixing = sqrtm(covarianceMatrix);
             robustSphering = inv(mixing);
+        end
+	    function result = hlp_memfree
+		    % Get the amount of free physical memory, in bytes
+    
+		    % Copyright (C) Christian Kothe, SCCN, 2010, christian@sccn.ucsd.edu
+		    %
+		    % This program is free software; you can redistribute it and/or modify it under the terms of the GNU
+		    % General Public License as published by the Free Software Foundation; either version 2 of the
+		    % License, or (at your option) any later version.
+		    %
+		    % This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without
+		    % even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+		    % General Public License for more details.
+		    %
+		    % You should have received a copy of the GNU General Public License along with this program; if not,
+		    % write to the Free Software Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307
+		    % USA
+    
+		    bean = java.lang.management.ManagementFactory.getOperatingSystemMXBean();
+		    result = bean.getFreePhysicalMemorySize();
+        end
+        function y = geometric_median(X,tol,y,max_iter)
+            % Calculate the geometric median for a set of observations (mean under a Laplacian noise distribution)
+            % This is using Weiszfeld's algorithm.
+            %
+            % In:
+            %   X : the data, as in mean
+            %   tol : tolerance (default: 1.e-5)
+            %   y : initial value (default: median(X))
+            %   max_iter : max number of iterations (default: 500)
+            %
+            % Out:
+            %   g : geometric median over X
+            
+            % Copyright (C) Christian Kothe, SCCN, 2012, ckothe@ucsd.edu
+            %
+            % This program is free software; you can redistribute it and/or modify it under the terms of the GNU
+            % General Public License as published by the Free Software Foundation; either version 2 of the
+            % License, or (at your option) any later version.
+            %
+            % This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without
+            % even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+            % General Public License for more details.
+            %
+            % You should have received a copy of the GNU General Public License along with this program; if not,
+            % write to the Free Software Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307
+            % USA
+            
+            if ~exist('tol','var') || isempty(tol)
+                tol = 1.e-5; end
+            if ~exist('y','var') || isempty(y)
+                y = median(X); end
+            if ~exist('max_iter','var') || isempty(max_iter)
+                max_iter = 500; end
+            
+            for i=1:max_iter
+                invnorms = 1./sqrt(sum(bsxfun(@minus,X,y).^2,2));
+                [y,oldy] = deal(sum(bsxfun(@times,X,invnorms)) / sum(invnorms),y);
+                if norm(y-oldy)/norm(y) < tol
+                    break; end
+            end
+        end
+        function y = block_geometric_median(X,blocksize,varargin)
+            % Calculate a blockwise geometric median (faster and less memory-intensive 
+            % than the regular geom_median function).
+            %
+            % This statistic is not robust to artifacts that persist over a duration that
+            % is significantly shorter than the blocksize.
+            %
+            % In:
+            %   X : the data (#observations x #variables)
+            %   blocksize : the number of successive samples over which a regular mean 
+            %               should be taken
+            %   tol : tolerance (default: 1.e-5)
+            %   y : initial value (default: median(X))
+            %   max_iter : max number of iterations (default: 500)
+            %
+            % Out:
+            %   g : geometric median over X
+            %
+            % Notes:
+            %   This function is noticably faster if the length of the data is divisible by the block size.
+            %   Uses the GPU if available.
+            % 
+            
+            % Copyright (C) Christian Kothe, SCCN, 2013, christian@sccn.ucsd.edu
+            %
+            % This program is free software; you can redistribute it and/or modify it under the terms of the GNU
+            % General Public License as published by the Free Software Foundation; either version 2 of the
+            % License, or (at your option) any later version.
+            %
+            % This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without
+            % even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+            % General Public License for more details.
+            %
+            % You should have received a copy of the GNU General Public License along with this program; if not,
+            % write to the Free Software Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307
+            % USA
+            
+            if nargin < 2 || isempty(blocksize)
+                blocksize = 1; end
+            
+            if blocksize > 1
+                [o,v] = size(X);       % #observations & #variables
+                r = mod(o,blocksize);  % #rest in last block
+                b = (o-r)/blocksize;   % #blocks
+                if r > 0
+                    X = [reshape(sum(reshape(X(1:(o-r),:),blocksize,b*v)),b,v); sum(X((o-r+1):end,:))*(blocksize/r)];
+                else
+                    X = reshape(sum(reshape(X,blocksize,b*v)),b,v);
+                end
+            end
+            
+            try
+                y = gather(geometric_median(gpuArray(X),varargin{:}))/blocksize;
+            catch
+                y = geometric_median(X,varargin{:})/blocksize;
+            end
         end
     end
 end

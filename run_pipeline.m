@@ -1,10 +1,10 @@
 function run_pipeline(dsnumber, varargin)
 nemar_path = '/expanse/projects/nemar/openneuro';
-eeglabroot = '/expanse/projects/nemar/dtyoung/NEMAR-pipeline';
-
+eeglabroot = '/expanse/projects/nemar/eeglab';
+pipelineroot = fullfile(eeglabroot, 'plugins', 'NEMAR-pipeline');
+addpath(fullfile(pipelineroot,'JSONio'));
 if isempty(which('finputcheck'))
-    addpath(fullfile(eeglabroot,'eeglab'));
-    addpath(fullfile(eeglabroot,'JSONio'));
+    addpath(eeglabroot);
     eeglab nogui;
 end
 
@@ -31,8 +31,7 @@ if isstr(opt), error(opt); end
 opt
 % reload eeglab if different version specified
 if ~strcmp(eeglabroot, opt.eeglabroot)
-    addpath(fullfile(opt.eeglabroot,'eeglab'));
-    addpath(fullfile(opt.eeglabroot,'JSONio'));
+    addpath(opt.eeglabroot);
     eeglab nogui;
     if opt.verbose
 	which pop_importbids;
@@ -91,7 +90,7 @@ if opt.copycode
     mkdir(codeDir)
     scripts = {'load_dataset.m', 'run_pipeline.m', 'eeg_nemar_preprocess.m', 'eeg_nemar_vis.m', 'eeg_nemar_dataqual.m'};
     for s=1:numel(scripts)
-        script_src = fullfile(eeglabroot, scripts{s});
+        script_src = fullfile(pipelineroot, scripts{s});
         script_dest = fullfile(codeDir, scripts{s});
         if exist(script_dest, 'file')
             delete(script_dest);
@@ -124,6 +123,7 @@ for i=1:numel(ALLEEG)
         fprintf(fid, '%s,%s\n', filepath, jobid);
     end
 end
+
 fclose(fid);
 diary off
 end

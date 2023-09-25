@@ -1,0 +1,10 @@
+[{
+   "operation": "summarize_hed_type",
+   "description": "Summarize conditional variable",
+   "parameters": {
+       "summary_name": "hed_type_summary",
+       "summary_filename": "hed_type_summary",
+       "type_tag": "condition-variable"
+   }
+}]
+
