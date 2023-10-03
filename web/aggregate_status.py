@@ -8,6 +8,7 @@ import datetime
 import argparse
 import subprocess
 import re
+import json
 
 raw_dir = "/data/qumulo/openneuro"
 processed_dir = "/data/qumulo/openneuro/processed"
@@ -37,6 +38,31 @@ def get_known_errors(matlab_log, batcherr_log):
             errors += "parpool\n"
     
     return errors
+
+def write_nemar_json(df, is_processed):
+    path = os.path.join(processed_dir, df['dsnumber'][0]) 
+    code_dir = path + '/code'
+    if not os.path.exists(code_dir):
+        os.mkdir(code_dir)
+
+    status_file = code_dir + "/nemar.json"
+    if os.path.exists(status_file):
+        with open(status_file, 'r') as fin:
+            status = json.load(fin)
+    else:  
+        status = {
+            "error": "",
+            "warning": "",
+            "has_visualization": None,
+        }
+    status["has_visualization"] = is_processed
+    with open(status_file, 'w') as fout:
+        json.dump(status, fout, indent=4)
+    try:
+        os.chmod(status_file, 0o664) # add write permission to group
+    except:
+        print(f'Cannot change permission for {status_file}')
+
 
 def append_modality(df):
     '''
@@ -103,6 +129,8 @@ def append_debug(df, processing):
             except:
                 print(f'Cannot change permission for {debug_note}')
         df['debug_note'] = notes
+        # write nemar.json with processed status based on value of notes
+        write_nemar_json(df, is_processed=(notes == "ok"))
 
         # manual debug note
         manual_debug_note = os.path.join(path, "logs", "debug", "manual_debug_note")

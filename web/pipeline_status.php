@@ -75,6 +75,11 @@
                             <input class="form-control" id="sbatch" name="sbatch"></input>
 			    <button type="button" onclick="copyText('sbatch')">Copy path</button>
                         </div>
+                        <div class="form-group">
+                            <label for="doc" class="col-form-label">nemar.json:</label>
+                            <input class="form-control" id="nemarjson" name="nemarjson"></input>
+			    <button type="button" onclick="copyText('nemarjson')">Copy path</button>
+                        </div>
                         <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
                     </form>
 		</div>
@@ -179,6 +184,7 @@
 		modal.find('#indLogDir').val('/expanse/projects/nemar/openneuro/processed/' + dsnumber + '/logs/eeg_logs');
 		modal.find('#note').val('/expanse/projects/nemar/openneuro/processed/' + dsnumber + '/logs/debug/manual_debug_note');
 		modal.find('#sbatch').val('/expanse/projects/nemar/openneuro/processed/logs/' + dsnumber + 'sbatch');
+		modal.find('#nemarjson').val('/expanse/projects/nemar/openneuro/processed/' + dsnumber + '/code/nemar.json');
 	    });
 	    $('#dsMatlabLogs').on('show.bs.modal', function (event) {
 		var clicked = $(event.relatedTarget);

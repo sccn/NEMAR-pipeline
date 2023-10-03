@@ -40,19 +40,29 @@ end
 
 eeg_logdir = fullfile(opt.logdir, 'eeg_logs');
 log_file = fullfile(opt.logdir, 'matlab_log');
-codeDir = fullfile(opt.logdir, "code");
+codeDir = fullfile(opt.outputdir, "code");
 if strcmp(opt.modeval, "new")
     % create output directories
     if opt.verbose
         fprintf('Output dir: %s\n', opt.outputdir);
     end
     if exist(opt.outputdir, 'dir')
+	if exist(codeDir, 'dir') && exist(fullfile(codeDir, 'nemar.json'))
+	    if ~exist(fullfile(pipelineroot, 'temp-nemar-json'), 'dir')
+		mkdir(fullfile(pipelineroot, 'temp-nemar-json'));
+	    end
+	    [status, msg] = copyfile(fullfile(codeDir, 'nemar.json'), fullfile(pipelineroot, 'temp-nemar-json', [dsnumber '_nemar.json']))
+	    if status ~= 1
+		error('Error backing up nemar.json file');
+	    end
+	end
         rmdir(opt.outputdir, 's');
     end
     status = mkdir(opt.outputdir);
     if ~status
         error('Could not create output directory');
     else
+	status = copyfile(fullfile(pipelineroot, 'temp-nemar-json', [dsnumber '_nemar.json'], fullfile(codeDir, 'nemar.json')));
         disp("Output directory created");
     end
 
