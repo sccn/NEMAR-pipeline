@@ -59,6 +59,9 @@ function [EEG, status] = eeg_nemar_preprocess(EEG, varargin)
     disp(status_tbl)
     status = table2array(status_tbl);
 
+    splitted = split(EEG.filename(1:end-4),'_');
+    modality = splitted{end};
+
     fprintf('Running pipeline sequence %s\n', strjoin(opt.pipeline, '->'));
     try
         for i=1:numel(opt.pipeline)
@@ -88,18 +91,18 @@ function [EEG, status] = eeg_nemar_preprocess(EEG, varargin)
                 rm_chan_types = {'AUDIO','MEG','EOG','ECG','EMG','EYEGAZE','GSR','HEOG','MISC','PPG','PUPIL','REF','RESP','SYSCLOCK','TEMP','TRIG','VEOG'};
                 if isfield(EEG.chanlocs, 'type')
                     EEG = pop_select(EEG, 'rmchantype', rm_chan_types);
-                    types = {EEG.chanlocs.type};
-                    eeg_indices = strmatch('EEG', types)';
-                    if ~isempty(eeg_indices)
-                        EEG = pop_select(EEG, 'chantype', 'EEG');
-                    else
-                        warning("No EEG channel type detected (for first EEG file). Keeping all channels");
-                    end
+		    if strcmp(modality, 'eeg')
+                        types = {EEG.chanlocs.type};
+                        eeg_indices = strmatch('EEG', types)';
+                        if ~isempty(eeg_indices)
+                            EEG = pop_select(EEG, 'chantype', 'EEG');
+                        else
+                            warning("No EEG channel type detected (for first EEG file). Keeping all channels");
+                        end
+	    	    end
                 else
-                    warning("Channel type not detected (for first EEG file)");
+                    warning("Channel type not detected (for first recording file)");
                 end
-                % ALLEEG = pop_select( ALLEEG,'nochannel',{'VEOG', 'Misc', 'ECG', 'M2'});
-
                 status_tbl.remove_chan = 1;
             end
 
@@ -120,12 +123,12 @@ function [EEG, status] = eeg_nemar_preprocess(EEG, varargin)
                     'LineNoiseCriterion',4,'Highpass',[0.75 1.25] ,'BurstCriterion',20, ...
                     'WindowCriterion',0.25,'BurstRejection','on','Distance','Euclidian', ...
                     'WindowCriterionTolerances',[-Inf 7] ,'fusechanrej',1}; % based on Arnaud paper
-                % ALLEEG = parexec(ALLEEG, 'pop_clean_rawdata', opt.logdir, options{:});
                 EEG = pop_clean_rawdata( EEG, options{:});
 
                 status_tbl.cleanraw = 1;
             end
 
+	    %{
             if strcmp(operation, "avg_ref")
                 if resume && status_tbl.avg_ref
                     fprintf('Skipping avg_ref\n');
@@ -138,6 +141,7 @@ function [EEG, status] = eeg_nemar_preprocess(EEG, varargin)
 
                 status_tbl.avg_ref = 1;
             end
+	    %}
 
             if strcmp(operation, "runica")
                 if resume && status_tbl.runica
@@ -154,7 +158,7 @@ function [EEG, status] = eeg_nemar_preprocess(EEG, varargin)
                 status_tbl.runica = 1;
             end
 
-            if strcmp(operation, "iclabel")
+            if strcmp(operation, "iclabel") && strcmp(modality, 'eeg')
                 if resume && status_tbl.iclabel
                     fprintf('Skipping iclabel\n');
                     continue

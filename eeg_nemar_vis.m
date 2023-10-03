@@ -56,6 +56,9 @@ function [EEG, status] = eeg_nemar_vis(EEG, varargin)
 
     fprintf('Plots: %s\n', strjoin(opt.plots, ', '));
 
+    splitted = split(EEG.filename(1:end-4), '_');
+    modality = splitted{end};
+
     try
         for i=1:numel(opt.plots)
             plot = opt.plots{i};
@@ -72,7 +75,7 @@ function [EEG, status] = eeg_nemar_vis(EEG, varargin)
                 plot_IC_activation(EEG);
             end
 
-            if strcmp(plot, 'icmap')
+            if strcmp(plot, 'icmap') && ~strcmp(modality, 'ieeg')
                 plot_ICLabel(EEG);
             end
 
@@ -151,6 +154,10 @@ function [EEG, status] = eeg_nemar_vis(EEG, varargin)
         g = finputcheck(varargin, { 'freq'    'integer' []         [6, 10, 22]; ...
                         'freqrange'   'integer'   []         [1 70]; ...
                         'percent'   'integer'    [], 10});
+	
+	% average reference before plotting
+        EEG = pop_reref(EEG,[], 'interpchan', []);
+
         % spectopo plot
         [spec, freqs] = spectopo(EEG.data, 0, EEG.srate, 'freqrange', g.freqrange, 'title', '', 'chanlocs', EEG.chanlocs, 'percent', g.percent,'plot', 'off');
         [~,ind50]=min(abs(freqs-50));
@@ -179,6 +186,9 @@ function [EEG, status] = eeg_nemar_vis(EEG, varargin)
         if isempty(EEG.icaweights)
             error('No IC decomposition found for EEG')
         end
+
+	% average reference before plotting
+        EEG = pop_reref(EEG,[], 'interpchan', []);
 
         EEG = pop_icflag(EEG,[0.75 1;NaN NaN;NaN NaN;NaN NaN;NaN NaN;NaN NaN;NaN NaN]);
         % IC activations plot
