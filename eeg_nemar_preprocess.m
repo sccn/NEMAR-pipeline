@@ -88,7 +88,7 @@ function [EEG, status] = eeg_nemar_preprocess(EEG, varargin)
                 % % remove non-ALLEEG channels (it is also possible to process ALLEEG data with non-ALLEEG data
                 % get non-EEG channels
                 % keep only EEG channels
-                rm_chan_types = {'AUDIO','MEG','EOG','ECG','EMG','EYEGAZE','GSR','HEOG','MISC','PPG','PUPIL','REF','RESP','SYSCLOCK','TEMP','TRIG','VEOG'};
+                rm_chan_types = {'AUDIO','EOG','ECG','EMG','EYEGAZE','GSR','HEOG','MISC','PPG','PUPIL','REF','RESP','SYSCLOCK','TEMP','TRIG','VEOG'};
                 if isfield(EEG.chanlocs, 'type')
                     EEG = pop_select(EEG, 'rmchantype', rm_chan_types);
 		    if strcmp(modality, 'eeg')
