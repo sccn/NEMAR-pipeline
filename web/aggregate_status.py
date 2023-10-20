@@ -40,28 +40,39 @@ def get_known_errors(matlab_log, batcherr_log):
     return errors
 
 def write_nemar_json(df, is_processed):
+    note = ""
     path = os.path.join(processed_dir, df['dsnumber'][0]) 
     code_dir = path + '/code'
     if not os.path.exists(code_dir):
         os.mkdir(code_dir)
+    try:
+        # os.chmod(code_dir, 0o774) # add write permission to group
+        os.system(f'chmod -R 776 {code_dir}') # add write permission to group
+    except:
+        note = f'Cannot change permission for {code_dir}'
 
+    status = {
+        "error": "",
+        "warning": "",
+        "has_visualization": None,
+    }
     status_file = code_dir + "/nemar.json"
     if os.path.exists(status_file):
-        with open(status_file, 'r') as fin:
-            status = json.load(fin)
-    else:  
-        status = {
-            "error": "",
-            "warning": "",
-            "has_visualization": None,
-        }
+        try:
+            with open(status_file, 'r') as fin:
+                status = json.load(fin)
+        except:
+            note += "\n" + f'Issue loading nemar.json. Could be permission issue.'
+
     status["has_visualization"] = is_processed
-    with open(status_file, 'w') as fout:
-        json.dump(status, fout, indent=4)
     try:
-        os.chmod(status_file, 0o664) # add write permission to group
+        with open(status_file, 'w') as fout:
+            json.dump(status, fout, indent=4)
+        # os.chmod(status_file, 0o664) # add write permission to group
+        os.system(f'chmod -R 776 {status_file}') # add write permission to group
     except:
-        print(f'Cannot change permission for {status_file}')
+        note += "\n" + f'Cannot modify/change permission for {status_file}'
+    return note
 
 
 def append_modality(df):
@@ -128,9 +139,12 @@ def append_debug(df, processing):
                 os.chmod(debug_note, 0o664) # add write permission to group
             except:
                 print(f'Cannot change permission for {debug_note}')
-        df['debug_note'] = notes
+
         # write nemar.json with processed status based on value of notes
-        write_nemar_json(df, is_processed=(notes == "ok"))
+        note = write_nemar_json(df, is_processed=(notes == "ok"))
+
+        notes += "\n" + note
+        df['debug_note'] = notes
 
         # manual debug note
         manual_debug_note = os.path.join(path, "logs", "debug", "manual_debug_note")
