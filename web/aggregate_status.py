@@ -39,39 +39,47 @@ def get_known_errors(matlab_log, batcherr_log):
     
     return errors
 
-def write_nemar_json(df, is_processed):
+def write_nemar_json(df, is_processed, latest_date):
     note = ""
     path = os.path.join(processed_dir, df['dsnumber'][0]) 
     code_dir = path + '/code'
     if not os.path.exists(code_dir):
         os.mkdir(code_dir)
-    try:
-        # os.chmod(code_dir, 0o774) # add write permission to group
-        os.system(f'chmod -R 776 {code_dir}') # add write permission to group
-    except:
-        note = f'Cannot change permission for {code_dir}'
+        try:
+            # os.chmod(code_dir, 0o774) # add write permission to group
+            os.system(f'chmod -R 776 {code_dir}') # add write permission to group
+        except:
+            note = f'Cannot change permission for code dir'
 
     status = {
         "error": "",
         "warning": "",
         "has_visualization": None,
+        "latest_date": latest_date,
     }
     status_file = code_dir + "/nemar.json"
     if os.path.exists(status_file):
         try:
             with open(status_file, 'r') as fin:
+                print(fin)
                 status = json.load(fin)
+                print(status)
         except:
-            note += "\n" + f'Issue loading nemar.json. Could be permission issue.'
+            note += "\n" + f'Issue loading nemar.json'
 
     status["has_visualization"] = is_processed
+    status["latest_date"] = latest_date
     try:
         with open(status_file, 'w') as fout:
             json.dump(status, fout, indent=4)
+    except:
+        note += "\n" + f'Cannot update nemar.json'
+    try:
         # os.chmod(status_file, 0o664) # add write permission to group
         os.system(f'chmod -R 776 {status_file}') # add write permission to group
     except:
-        note += "\n" + f'Cannot modify/change permission for {status_file}'
+        note += "\n" + f'Cannot change permission for nemar.json'
+    print(status)
     return note
 
 
@@ -98,7 +106,7 @@ def append_modality(df):
 
         return df
 
-def append_latest_date(df):
+def get_latest_date(df):
     log_dir = os.path.join(processed_dir, df['dsnumber'][0], 'logs')
     sbatch_log_dir = os.path.join(processed_dir, 'logs', df['dsnumber'][0])
     manual_debug_note = os.path.join(log_dir, "debug", "manual_debug_note")
@@ -108,9 +116,9 @@ def append_latest_date(df):
                         for root, _, files in os.walk(sbatch_log_dir) for file in files]
     latest_date = max(dates) if len(dates) > 0 else datetime.datetime.fromtimestamp(os.path.getmtime(logfile))
 
-    df['latest_batch_run'] = latest_date
-    df['latest_date_manual'] = datetime.datetime.fromtimestamp(os.path.getmtime(manual_debug_note))
-    return df
+    latest_sbatch = latest_date
+    latest_manual_note = datetime.datetime.fromtimestamp(os.path.getmtime(manual_debug_note))
+    return latest_sbatch, latest_manual_note
 
 def append_debug(df, processing):
     '''
@@ -140,10 +148,6 @@ def append_debug(df, processing):
             except:
                 print(f'Cannot change permission for {debug_note}')
 
-        # write nemar.json with processed status based on value of notes
-        note = write_nemar_json(df, is_processed=(notes == "ok"))
-
-        notes += "\n" + note
         df['debug_note'] = notes
 
         # manual debug note
@@ -201,7 +205,13 @@ def append_custom(df, processing):
         raise ValueError('More than one dataset being processed')
     df = append_modality(df)
     df = append_debug(df, processing)
-    df = append_latest_date(df)
+    latest_sbatch, latest_manual_note = get_latest_date(df)
+    # write nemar.json with processed status based on value of notes
+    note = write_nemar_json(df, is_processed=check_status(df), latest_date=latest_sbatch.strftime("%m-%d-%Y"))
+    if note:
+        df['debug_note'] += "\n" + note
+    df['latest_batch_run'] = latest_sbatch
+    df['latest_date_manual'] = latest_manual_note
     return df
     
 def get_processing_ds():
