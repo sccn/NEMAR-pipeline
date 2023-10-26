@@ -1,4 +1,6 @@
 <?php
+$directory_self = str_replace(basename($_SERVER['PHP_SELF']), '', $_SERVER['PHP_SELF']);
+$handler = 'http://' . $_SERVER['HTTP_HOST'] . $directory_self . 'update.manual.notes.php';
 ?>
 <html lang="en">
         <head>
@@ -110,6 +112,36 @@
 	</div>
     </div>
 
+    <!-- Debug note edit model-->
+    <div class="modal fade" id="noteEditModal" data-backdrop="static" tabindex="-1" role="dialog" aria-labelledby="noteEditModalLabel" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="noteEditModalLabel">Edit manual note</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <form method=POST id='Activate' name='Activate' action='' enctype='multipart/form-data'>
+                        <div class="form-group"><input type="hidden" class="form-control" id="plugin" name="plugin"></div>
+                        <div class="form-group"><input type="hidden" class="form-control" id="action" name="action" value="update"></div>
+                        <div class="form-group">
+                            <label for="noteEditDsnumber" class="col-form-label">Dsnumber:</label>
+                            <input type="text" class="form-control" id="noteEditDsnumber" readonly  name="noteEditDsnumber">
+                        </div>
+                        <div class="form-group">
+                            <label for="notes" class="col-form-label">Manual note:</label>
+			    <textarea class="form-control" id="notes" name="notes" rows="10"></textarea>
+                        </div>
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                        <button type="button" class="btn btn-primary" data-dismiss="modal" id="noteEditModalSubmit" name="submit">Update</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Ind Log content modal -->
     <div class="modal fade" id="dsIndLogs" data-backdrop="static" tabindex="-1" role="dialog" aria-labelledby="dsIndLogsLabel" aria-hidden="true">
         <div class="modal-dialog modal-xl" role="document">
@@ -171,7 +203,13 @@
 			last_td.html("<a data-toggle='modal' class='text-primary' data-target='#dsMatlabLogs' data-dsnumber='" + dsnumber + "' data-file='matlab'>MATLAB</a><br>");
 			last_td.append("<a data-toggle='modal' class='text-success' data-target='#dsIndLogs' data-dsnumber='" + dsnumber + "' data-file='ind'>Ind status</a><br>");
 			last_td.append("<a data-toggle='modal' class='text-danger' data-target='#dsMatlabLogs' data-dsnumber='" + dsnumber + "' data-file='sbatcherr'>Batch .err</a><br>");
-			last_td.append("<a data-toggle='modal' class='text-info' data-target='#dsMatlabLogs' data-dsnumber='" + dsnumber + "' data-file='sbatchout'>Batch .out</a>");
+			last_td.append("<a data-toggle='modal' class='text-info' data-target='#dsMatlabLogs' data-dsnumber='" + dsnumber + "' data-file='sbatchout'>Batch .out</a><br>");
+			last_td.append("<a data-toggle='modal' class='text-warning' data-target='#noteEditModal' data-dsnumber='" + dsnumber + "' data-file='manualnote'>Edit note</a>");
+			var manual_note_col = $(this).children().eq(15);
+			manual_note_col.attr('id','manual_note_' + dsnumber);
+			$.post('get_file.php', { dsnumber: dsnumber, file: 'manualnote' }, function(result) { 
+			     manual_note_col.text(result);
+			});
 		    });
 
 	    });
@@ -206,6 +244,27 @@
 		        var result = csv_string_to_table(result, dsnumber);
 		    }
 		    modal.find('#indlogtable').html(result);
+		});
+	    });
+	    $('#noteEditModal').on('show.bs.modal', function (event) {
+		var clicked = $(event.relatedTarget);
+		var dsnumber = clicked.data('dsnumber');
+		var file = clicked.data('file');
+		var modal = $(this);
+		$.post('get_file.php', { dsnumber: dsnumber, file: file }, function(result) { 
+		    modal.find('#notes').val(result);
+		});
+		$("#noteEditDsnumber").val(dsnumber);
+	    });
+	    $('#noteEditModalSubmit').on('click', function (event) {
+		var clicked = $(event.relatedTarget);
+		var dsnumber = $('#noteEditDsnumber').val();
+		var notes = $('#notes').val();
+		var modal = $('#noteEditModal');
+		console.log(notes);
+		$('#manual_note_' + dsnumber).text(notes);
+		$.post('update.manual.notes.php', { dsnumber: dsnumber, notes: notes }, function(result) { 
+		    console.log(result);
 		});
 	    });
         } );

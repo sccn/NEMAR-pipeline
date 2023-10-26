@@ -15,7 +15,7 @@ processed_dir = "/data/qumulo/openneuro/processed"
 sccn_dir = "/var/local/www/eeglab/NEMAR"
 final_file = os.path.join(sccn_dir,"pipeline_status_all.csv") #"/data/qumulo/openneuro/processed/logs/pipeline_status_all.csv" #"/expanse/projects/nemar/dtyoung/NEMAR-pipeline/temp/processed/pipeline_status_all.csv"
 final_file_html = os.path.join(sccn_dir,"pipeline_status_all.html") #"/data/qumulo/openneuro/processed/logs/pipeline_status_all.html" 
-
+manual_note_dir = "/var/local/www/eeglab/NEMAR/manual_notes"
 try:
     logfile = open(os.path.join(sccn_dir,'log.txt'),'w')
 except OSError:
@@ -56,14 +56,13 @@ def write_nemar_json(df, is_processed, latest_date):
         "warning": "",
         "has_visualization": None,
         "latest_date": latest_date,
+        "dataset_version": ""
     }
     status_file = code_dir + "/nemar.json"
     if os.path.exists(status_file):
         try:
             with open(status_file, 'r') as fin:
-                print(fin)
                 status = json.load(fin)
-                print(status)
         except:
             note += "\n" + f'Issue loading nemar.json'
 
@@ -79,7 +78,6 @@ def write_nemar_json(df, is_processed, latest_date):
         os.system(f'chmod -R 776 {status_file}') # add write permission to group
     except:
         note += "\n" + f'Cannot change permission for nemar.json'
-    print(status)
     return note
 
 
@@ -151,7 +149,7 @@ def append_debug(df, processing):
         df['debug_note'] = notes
 
         # manual debug note
-        manual_debug_note = os.path.join(path, "logs", "debug", "manual_debug_note")
+        manual_debug_note = os.path.join(manual_note_dir, df['dsnumber'][0])
         manual_notes = ""
         if not os.path.isfile(manual_debug_note) or os.stat(manual_debug_note).st_size == 0:
             # (re)create debug note if not exists or is empty
