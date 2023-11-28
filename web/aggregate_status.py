@@ -104,19 +104,19 @@ def append_modality(df):
 
         return df
 
-def get_latest_date(df):
-    log_dir = os.path.join(processed_dir, df['dsnumber'][0], 'logs')
+def get_latest_date(df) -> str:
     sbatch_log_dir = os.path.join(processed_dir, 'logs', df['dsnumber'][0])
-    manual_debug_note = os.path.join(log_dir, "debug", "manual_debug_note")
     logfile = os.path.join(processed_dir, "logs", df['dsnumber'][0] + '.out')
 
-    dates = [datetime.datetime.fromtimestamp(os.path.getmtime(os.path.join(root, file)))
-                        for root, _, files in os.walk(sbatch_log_dir) for file in files]
-    latest_date = max(dates) if len(dates) > 0 else datetime.datetime.fromtimestamp(os.path.getmtime(logfile))
+    if os.path.exists(sbatch_log_dir) and os.path.exists(logfile):
+        dates = [datetime.datetime.fromtimestamp(os.path.getmtime(os.path.join(root, file)))
+                            for root, _, files in os.walk(sbatch_log_dir) for file in files]
+        latest_date = max(dates) if len(dates) > 0 else datetime.datetime.fromtimestamp(os.path.getmtime(logfile))
 
-    latest_sbatch = latest_date
-    latest_manual_note = datetime.datetime.fromtimestamp(os.path.getmtime(manual_debug_note))
-    return latest_sbatch, latest_manual_note
+        latest_sbatch = latest_date.strftime("%m-%d-%Y")
+    else:
+        latest_sbatch = "N/A"
+    return latest_sbatch
 
 def append_debug(df, processing):
     '''
@@ -125,6 +125,10 @@ def append_debug(df, processing):
     if len(df) > 1:
         raise ValueError('More than one dataset being processed')
     path = os.path.join(processed_dir, df['dsnumber'][0])
+    if not os.path.exists(os.path.join(path, 'logs', 'debug')):
+        os.mkdir(os.path.join(path, 'logs', 'debug'))
+        os.system(f'chgrp -R nemar {os.path.join(path, "logs", "debug")}')
+        os.system(f'chmod -R 775 {os.path.join(path, "logs", "debug")}')
     notes = ""
     if os.path.isdir(path):
         if check_status(df):
@@ -142,7 +146,8 @@ def append_debug(df, processing):
                     # notes = get_known_errors(matlab_log, batcherr_log) # No need to get known_errors anymore because there's no central log file 
                 file.write(notes)
             try:
-                os.chmod(debug_note, 0o664) # add write permission to group
+                os.system(f'chmod -R 776 {debug_note}') # add write permission to group
+                # os.chmod(debug_note, 0o664) # add write permission to group
             except:
                 print(f'Cannot change permission for {debug_note}')
 
@@ -156,7 +161,8 @@ def append_debug(df, processing):
             with open(manual_debug_note, 'w') as file:
                 file.write("") # create empty file
             try:
-                os.chmod(manual_debug_note, 0o664) # add write permission to group
+                os.system(f'chmod -R 776 {manual_debug_note}') # add write permission to group
+                # os.chmod(manual_debug_note, 0o664) # add write permission to group
             except:
                 print(f'Cannot change permission for {manual_debug_note}')
 
@@ -178,7 +184,9 @@ def check_status(df):
             counts = series[0].split('/')
             if len(counts) == 2:
                 status.append(int(counts[0]) / int(counts[1]))
-    return all(np.array(status) > 0.8)
+    # 11/02/2023: if status is empty list that means there's no column in the df with valid values (*/*)
+    # 11/02/2023: it means the columns contain -1
+    return len(status) > 0 and all(np.array(status) > 0.8)
                 
 
 def reformat_cell(df):
@@ -203,13 +211,12 @@ def append_custom(df, processing):
         raise ValueError('More than one dataset being processed')
     df = append_modality(df)
     df = append_debug(df, processing)
-    latest_sbatch, latest_manual_note = get_latest_date(df)
+    latest_sbatch = get_latest_date(df)
     # write nemar.json with processed status based on value of notes
-    note = write_nemar_json(df, is_processed=check_status(df), latest_date=latest_sbatch.strftime("%m-%d-%Y"))
+    note = write_nemar_json(df, is_processed=check_status(df), latest_date=latest_sbatch)
     if note:
         df['debug_note'] += "\n" + note
     df['latest_batch_run'] = latest_sbatch
-    df['latest_date_manual'] = latest_manual_note
     return df
     
 def get_processing_ds():
@@ -228,7 +235,7 @@ def aggregate_ind_status(dsnumber):
     log_dir = os.path.join(processed_dir, dsnumber, 'logs', 'eeg_logs')
     frames = []
     # so we also append the viz and dataqual columns to the ind df
-    all_cols = ['set_file', 'check_chanloc', 'remove_chan', 'cleanraw', 'avg_ref', 'runica', 'iclabel', 'midraw', 'spectra', 'icaact', 'icmap', 'dataqual']
+    all_cols = ['set_file', 'check_import', 'check_chanloc', 'remove_chan', 'cleanraw', 'avg_ref', 'runica', 'iclabel', 'midraw', 'spectra', 'icaact', 'icmap', 'dataqual']
     # print(log_dir)
     # print(os.path.exists(log_dir))
     if os.path.exists(log_dir):
@@ -249,10 +256,11 @@ def aggregate_ind_status(dsnumber):
                         df[colname] = val[0]
 
                 # hack fix to make backward compatible
+                if 'check_import' not in df_preprocess:
+                    df['check_import'] = 1 if df['remove_chan'][0] > 0 else 0
                 if 'check_chanloc' not in df_preprocess:
-                    if df['avg_ref'][0] == 1:
-                        df['check_chanloc'] = 1
-                
+                    df['check_chanloc'] = 1 if df['avg_ref'][0] == 1 else 0
+
                 vis_status_file = os.path.join(log_dir, f[:-len('preprocess.csv')]+'vis.csv')
                 if os.path.exists(vis_status_file):
                     df_vis = pd.read_csv(vis_status_file)
@@ -274,18 +282,31 @@ def aggregate_ind_status(dsnumber):
         
         aggregated = all_status.sum()
         final_status_df = frames[0].copy()
-        final_status_df = final_status_df.drop(columns=['set_file'])
-        final_status_df.insert(0, 'dsnumber', dsnumber)
-        final_status_df.insert(1, 'imported', 1 if aggregated['remove_chan'] > 0 else 0) # if start preprocessing, import must have been successful
+        # if 'check_import' not in final_status_df:
+            # final_status_df.insert(1, 'check_import', 'ok' if aggregated['remove_chan'] > 0 else '0') # if start preprocessing, import must have been successful
 
         nsetfiles = len(all_status)
         for (col, val) in aggregated.items():
-            if col != 'dsnumber' and col != 'imported' and col != 'set_file':
+            if col != 'dsnumber' and col != 'set_file': # and col != 'check_import' 
                 final_status_df[col] = f'{int(val)}/{nsetfiles}'
-        with open(os.path.join(processed_dir, dsnumber, 'logs', 'pipeline_status.csv'), 'w') as out:
-            final_status_df.to_csv(out, index=False)
-        # print(final_status_df)
-        return final_status_df
+    else:
+        final_status_df = pd.DataFrame()
+        for col in all_cols:
+            final_status_df[col] = [-1] 
+        
+    final_status_df = final_status_df.drop(columns=['set_file'])
+    final_status_df.insert(0, 'dsnumber', dsnumber)
+
+    # create logs dir if not exists
+    log_dir = os.path.join(processed_dir, dsnumber, 'logs')
+    if not os.path.exists(log_dir):
+        os.mkdir(log_dir)
+        os.system(f'chmod -R 776 {log_dir}') # add write permission to group
+
+    with open(os.path.join(log_dir, 'pipeline_status.csv'), 'w') as out:
+        final_status_df.to_csv(out, index=False)
+    # print(final_status_df)
+    return final_status_df
 
 
 def get_pipeline_status(dsnumbers):
@@ -300,13 +321,18 @@ def get_pipeline_status(dsnumbers):
             df_new = pd.read_csv(os.path.join(processed_dir, ds, 'logs', 'pipeline_status.csv'))
             df = all_status[all_status["dsnumber"] == ds].copy() 
             for col, _ in df.items():
-                if col in df_new:
-                    df[col] = df_new[col][0]
+                if len(df) == 0:
+                    df.loc[len(df.index), col] = df_new[col][0]
+                else:
+                    if col in df_new:
+                        df[col] = df_new[col][0]
             df.index = [0]
             df = append_custom(df, processing)
             df = reformat_cell(df)
-            all_status.loc[all_status["dsnumber"] == ds] = df.to_numpy()
-        return all_status
+            if ds in list(all_status["dsnumber"]):
+                all_status.loc[all_status["dsnumber"] == ds] = df.to_numpy()
+            else:
+                all_status = pd.concat([all_status, df])
     else:
         frames = []
         for f in os.listdir(processed_dir):
@@ -327,7 +353,15 @@ def get_pipeline_status(dsnumbers):
                         frames.append(df)
 
         all_status = pd.concat(frames)
-        return all_status
+
+    # final column reformatting
+    # remove imported column
+    if 'imported' in all_status:
+        all_status.pop('imported')
+    # move check_import to front
+    first_column = all_status.pop('check_import') 
+    all_status.insert(1, 'check_import', first_column) 
+    return all_status
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(

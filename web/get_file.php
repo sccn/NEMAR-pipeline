@@ -1,5 +1,6 @@
 <?php
 
+$directory_self = str_replace(basename($_SERVER['PHP_SELF']), '', $_SERVER['PHP_SELF']);
 $base_path = "/data/qumulo/openneuro/processed";
 $dsnumber = $_POST["dsnumber"];
 $file = $_POST["file"];
@@ -10,10 +11,13 @@ elseif ($file == "ind") {
     $filepath = $base_path . "/" . $dsnumber . "/logs/ind_pipeline_status.csv";
 }
 elseif ($file == "sbatcherr") {
-    $filepath = $base_path . "/logs/" . $dsnumber . ".err";
+    $filepath = $base_path . "/logs/" . $dsnumber . "/" . $dsnumber . ".err";
 }
 elseif ($file == "sbatchout") {
-    $filepath = $base_path . "/logs/" . $dsnumber . ".out";
+    $filepath = $base_path . "/logs/" . $dsnumber . "/" . $dsnumber . ".out";
+}
+elseif ($file == "manualnote") {
+    $filepath = getcwd() . "/manual_notes/" . $dsnumber;
 }
 else {
     $dspath = $base_path . "/" . $dsnumber;
@@ -42,3 +46,4 @@ function searchFileRecursive($directory, $filename) {
     return "";
 }
 ?>
+"get_file.php" 48L, 1373C                                                                                                        
