@@ -13,16 +13,16 @@ opt = finputcheck(varargin, { ...
     'eeglabroot'              'string'    {}                      eeglabroot; ...
     'outputdir'               'string'    { }                     fullfile(nemar_path, 'processed', dsnumber); ...
     'logdir'                  'string'    {}                      fullfile(nemar_path, 'processed', dsnumber, 'logs'); ...
-    'copycode'                'boolean'   {}                      true; ...
     'modeval'                 'string'    {'new', 'resume'}       'new'; ...                                                      % if new mode, pipeline will overwrite existing outputdir. resume won't 
     'preprocess'              'boolean'   {}                      true; ...
-    'preprocess_pipeline'     'cell'      {}                      {'check_chanloc', 'remove_chan', 'cleanraw', 'avg_ref', 'runica', 'iclabel'}; ...  % preprocessing steps
+    'preprocess_pipeline'     'cell'      {}                      {'check_import', 'check_chanloc', 'remove_chan', 'cleanraw', 'avg_ref', 'runica', 'iclabel'}; ...  % preprocessing steps
     'vis'                     'boolean'   {}                      true; ...
     'vis_plots'               'cell'      {}                      {'midraw', 'spectra', 'icaact', 'icmap', 'icahist'}; ...                     % visualization plots
     'dataqual'                'boolean'   {}                      true; ...
     'maxparpool'              'integer'   {}                      0; ...                                                           % if 0, sequential processing
     'legacy'                  'boolean'   {}                      false; ...                                                           % if 0, sequential processing
     'run_local'               'boolean'   {}                      false; ...
+    'ctffunc'                 'string'    {}                      'fileio'; ...
     'subjects'                'integer'  []                      []; ... 
     'verbose'                 'boolean'   {}                      true; ...
     }, 'run_pipeline');
@@ -92,30 +92,13 @@ if strcmp(opt.modeval, "new")
     end
 end
 
-% save the latest version of the pipeline
-if opt.copycode
-    if opt.verbose
-        disp("Creating code dir and copying pipeline code");
-    end
-    mkdir(codeDir)
-    scripts = {'load_dataset.m', 'run_pipeline.m', 'eeg_nemar_preprocess.m', 'eeg_nemar_vis.m', 'eeg_nemar_dataqual.m'};
-    for s=1:numel(scripts)
-        script_src = fullfile(pipelineroot, scripts{s});
-        script_dest = fullfile(codeDir, scripts{s});
-        if exist(script_dest, 'file')
-            delete(script_dest);
-        end
-        copyfile(script_src, script_dest);
-    end
-end
-
 % set up pipeline sequence
 pipeline = opt.preprocess_pipeline;
 plots = opt.vis_plots; 
 
-pop_editoptions( 'option_storedisk', 0);
+pop_editoptions( 'option_storedisk', 1);
 disp(opt.modeval)
-[STUDY, ALLEEG, dsname] = load_dataset(opt.bidspath, opt.outputdir, opt.modeval, opt.subjects);
+[STUDY, ALLEEG, dsname] = load_dataset(opt.bidspath, opt.outputdir, opt.modeval, opt.subjects, opt.ctffunc);
 
 if opt.verbose
     disp('Check channel location after importing\n');

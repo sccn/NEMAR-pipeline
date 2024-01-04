@@ -12,7 +12,7 @@
 % To do: ignore non-EEG channel types instead of removing them
 
 function [EEG, status] = eeg_nemar_preprocess(EEG, varargin)
-    pipeline_all = {'check_chanloc', 'remove_chan', 'cleanraw', 'avg_ref', 'runica', 'iclabel'};
+    pipeline_all = {'check_import', 'check_chanloc', 'remove_chan', 'cleanraw', 'avg_ref', 'runica', 'iclabel'};
     opt = finputcheck(varargin, { ...
         'pipeline'       'cell'      {}                      pipeline_all; ...  % preprocessing steps
         'logdir'         'string'    {}                      './eeg_nemar_logs'; ...
@@ -65,13 +65,23 @@ function [EEG, status] = eeg_nemar_preprocess(EEG, varargin)
     fprintf('Running pipeline sequence %s\n', strjoin(opt.pipeline, '->'));
     try
         for i=1:numel(opt.pipeline)
+            disp(fullfile(EEG.filepath, EEG.filename))
             operation = opt.pipeline{i};
+            if strcmp(operation, "check_import")
+                if resume && status_tbl.check_import
+                    fprintf('Skipping check_import\n');
+                    continue
+                end
+                if exist(fullfile(EEG.filepath, EEG.filename), 'file')
+                    status_tbl.check_import = 1;
+                end
+            end
             if strcmp(operation, "check_chanloc")
                 if resume && status_tbl.check_chanloc
                     fprintf('Skipping check_chanloc\n');
                     continue
                 end
-                if isfield(EEG.chanlocs, 'theta')
+                if isfield(EEG.chanlocs, 'theta') && (strcmp(modality, 'eeg') || strcmp(modality, 'meg'))
                     thetas = [EEG.chanlocs.theta];
                     if isempty(thetas)
                         error("Error: No channel locations detected");
@@ -91,15 +101,15 @@ function [EEG, status] = eeg_nemar_preprocess(EEG, varargin)
                 rm_chan_types = {'AUDIO','EOG','ECG','EMG','EYEGAZE','GSR','HEOG','MISC','PPG','PUPIL','REF','RESP','SYSCLOCK','TEMP','TRIG','VEOG'};
                 if isfield(EEG.chanlocs, 'type')
                     EEG = pop_select(EEG, 'rmchantype', rm_chan_types);
-		    if strcmp(modality, 'eeg')
-                        types = {EEG.chanlocs.type};
-                        eeg_indices = strmatch('EEG', types)';
-                        if ~isempty(eeg_indices)
-                            EEG = pop_select(EEG, 'chantype', 'EEG');
-                        else
-                            warning("No EEG channel type detected (for first EEG file). Keeping all channels");
-                        end
-	    	    end
+                    if strcmp(modality, 'eeg')
+                            types = {EEG.chanlocs.type};
+                            eeg_indices = strmatch('EEG', types)';
+                            if ~isempty(eeg_indices)
+                                EEG = pop_select(EEG, 'chantype', 'EEG');
+                            else
+                                warning("No EEG channel type detected (for first EEG file). Keeping all channels");
+                            end
+                    end
                 else
                     warning("Channel type not detected (for first recording file)");
                 end

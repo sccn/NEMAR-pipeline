@@ -2,7 +2,7 @@ function process_all_select_datasets(varargin)
 root_path = '/home/dtyoung/NEMAR-pipeline';
 addpath(root_path);
 
-dsfolders = {'ds003104','ds003805','ds004444','ds004554','ds003633','ds000246','ds004119','ds004106','ds004520','ds004521','ds004519','ds004368','ds004000','ds003374','ds003509','ds003568','ds003766','ds003505','ds004080','ds003848'};
+dsfolders = {'ds003645','ds002550','ds003568','ds003633','ds003104','ds000246','ds000247','ds000248','ds003682','ds003694','ds003703','ds003082','ds003483'}; % MEG datasets
 
 for i=1:numel(dsfolders)
     dsnumber = dsfolders{i};

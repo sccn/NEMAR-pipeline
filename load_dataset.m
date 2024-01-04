@@ -1,4 +1,4 @@
-function [STUDY, ALLEEG, dsname] = load_dataset(filepath, outputDir, modeval, subjects)
+function [STUDY, ALLEEG, dsname] = load_dataset(filepath, outputDir, modeval, subjects, ctffunc)
     % check EEGLAB environment
     if plugin_status('bids-matlab-tools') == 0
         error('BIDS-MATLAB-TOOLS plugin is not installed. Please install it before using this function.');
@@ -18,7 +18,7 @@ function [STUDY, ALLEEG, dsname] = load_dataset(filepath, outputDir, modeval, su
     if ~exist(studyFile, 'file') || strcmpi(modeval, 'new')
         if ismember(dsname, useRawChans), bidsChan = 'off'; else bidsChan = 'on'; end
         disp(['bidsChan ' bidsChan]);
-        [STUDY, ALLEEG] = pop_importbids(filepath, 'bidsevent','on','bidschanloc', bidsChan,'studyName',dsname,'outputdir', outputDir, 'subjects', subjects);
+        [STUDY, ALLEEG] = pop_importbids(filepath, 'bidsevent','on','bidschanloc', bidsChan,'studyName',dsname,'outputdir', outputDir, 'subjects', subjects, 'ctffunc', ctffunc);
     else
         tic
         [STUDY, ALLEEG] = pop_loadstudy(studyFile);

@@ -1,5 +1,4 @@
 <?php
-echo "test function";
 $directory_self = str_replace(basename($_SERVER['PHP_SELF']), '', $_SERVER['PHP_SELF']);
 
 // retrieve data from form
@@ -7,9 +6,7 @@ $dsnumber = $_POST[dsnumber];
 $notes = $_POST[notes];
 
 $note_path = getcwd() . "/manual_notes/" . $dsnumber;
-echo $note_path;
 $note_file = fopen($note_path, "w");
-echo $note_file;
 fwrite($note_file, $notes);
 fclose($note_file);
 
