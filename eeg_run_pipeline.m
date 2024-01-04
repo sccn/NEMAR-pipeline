@@ -1,44 +1,13 @@
 function eeg_run_pipeline(dsnumber, filepath, varargin)
-nemar_path = '/expanse/projects/nemar/openneuro';
-eeglabroot = '/expanse/projects/nemar/eeglab';
-pipelineroot = fullfile(eeglabroot,'plugins', 'NEMAR-pipeline');
-addpath(fullfile(pipelineroot,'JSONio'));
-if isempty(which('finputcheck'))
-    addpath(eeglabroot);
-    eeglab nogui;
-end
-
-opt = finputcheck(varargin, { ...
-    'bidspath'                'string'    {}                      fullfile(nemar_path, dsnumber);  ...
-    'eeglabroot'              'string'    {}                      eeglabroot; ...
-    'outputdir'               'string'    { }                     fullfile(nemar_path, 'processed', dsnumber); ...
-    'logdir'                  'string'    {}                      fullfile(nemar_path, 'processed', dsnumber, 'logs'); ...
-    'resave'                  'boolean'   {}                      true; ...
-    'modeval'                 'string'    {'new', 'resume'}       'new'; ...                                                      % if new mode, pipeline will overwrite existing outputdir. resume won't 
-    'preprocess'              'boolean'   {}                      true; ...
-    'preprocess_pipeline'     'cell'      {}                      {'check_import', 'check_chanloc', 'remove_chan', 'cleanraw', 'avg_ref', 'runica', 'iclabel'}; ...  % preprocessing steps
-    'vis'                     'boolean'   {}                      true; ...
-    'vis_plots'               'cell'      {}                      {'midraw', 'spectra', 'icaact', 'icmap', 'icahist'}; ...                     % visualization plots
-    'dataqual'                'boolean'   {}                      true; ...
-    'maxparpool'              'integer'   {}                      0; ...                                                           % if 0, sequential processing
-    'legacy'                  'boolean'   {}                      false; ...                                                           % if 0, sequential processing
-    'verbose'                 'boolean'   {}                      true; ...
-    'subjects'                'integer'   []                      []; ....
-    'ctffunc'                 ''          []                      []; ....
-    'run_local'               'boolean'   {}                      false; ...
-    }, 'eeg_run_pipeline');
-if isstr(opt), error(opt); end
-
-opt
-% reload eeglab if different version specified
-if ~strcmp(eeglabroot, opt.eeglabroot)
-    addpath(opt.eeglabroot);
-    eeglab nogui;
-    if opt.verbose
-	which pop_importbids;
-
+    nemar_path = '/expanse/projects/nemar/openneuro';
+    eeglabroot = '/expanse/projects/nemar/eeglab';
+    pipelineroot = fullfile(eeglabroot,'plugins', 'NEMAR-pipeline');
+    addpath(fullfile(pipelineroot,'JSONio'));
+    if isempty(which('finputcheck'))
+        addpath(eeglabroot);
+        eeglab nogui;
     end
-    
+
     opt = finputcheck(varargin, { ...
         'bidspath'                'string'    {}                      fullfile(nemar_path, dsnumber);  ...
         'eeglabroot'              'string'    {}                      eeglabroot; ...
@@ -59,17 +28,17 @@ if ~strcmp(eeglabroot, opt.eeglabroot)
         'run_local'               'boolean'   {}                      false; ...
         }, 'eeg_run_pipeline');
     if isstr(opt), error(opt); end
-    
+
     opt
     % reload eeglab if different version specified
     if ~strcmp(eeglabroot, opt.eeglabroot)
         addpath(opt.eeglabroot);
         eeglab nogui;
         if opt.verbose
-        which pop_importbids;
+            which pop_importbids;
         end
     end
-    
+
     % load data run
     EEG = pop_loadset(filepath);
     [~, filename, ext] = fileparts(EEG.filename);

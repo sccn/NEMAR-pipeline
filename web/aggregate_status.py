@@ -186,7 +186,6 @@ def check_status(df):
     '''
     Check if at least 80% of dataset has been processed
     '''
-    print(df)
     status = []
     for (columnName, series) in df.items():
         if columnName not in ["manual_debug_note", "debug_note"] and isinstance(series[0], str):

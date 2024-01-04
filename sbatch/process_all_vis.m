@@ -7,7 +7,7 @@ for i=1:numel(dsfolders)
     
 	fprintf('Processing %s\n', dsnumber);
     try
-        run_pipeline(dsnumber, 'preprocess', false, 'vis', true, 'dataqual', false, 'maxparpool', 127, 'modeval', 'resume');
+        run_pipeline(dsnumber, 'preprocess', false, 'vis', true, 'dataqual', false, 'maxparpool', 0, 'modeval', 'resume');
     catch ME
         fprintf('%s\n', ME.identifier);
         fprintf('%s\n', ME.message);
