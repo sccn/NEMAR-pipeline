@@ -178,6 +178,7 @@ def check_status(df):
     '''
     Check if at least 80% of dataset has been processed
     '''
+    print(df)
     status = []
     for (columnName, series) in df.items():
         if columnName not in ["manual_debug_note", "debug_note"] and isinstance(series[0], str):
@@ -235,7 +236,7 @@ def aggregate_ind_status(dsnumber):
     log_dir = os.path.join(processed_dir, dsnumber, 'logs', 'eeg_logs')
     frames = []
     # so we also append the viz and dataqual columns to the ind df
-    all_cols = ['set_file', 'check_import', 'check_chanloc', 'remove_chan', 'cleanraw', 'avg_ref', 'runica', 'iclabel', 'midraw', 'spectra', 'icaact', 'icmap', 'dataqual']
+    all_cols = ['set_file', 'check_import', 'check_chanloc', 'remove_chan', 'cleanraw', 'avg_ref', 'runica', 'iclabel', 'midraw', 'spectra', 'icaact', 'icmap', 'icahist', 'dataqual']
     # print(log_dir)
     # print(os.path.exists(log_dir))
     if os.path.exists(log_dir):
