@@ -8,7 +8,7 @@
 %   EEG      - [struct]  plotted dataset
 %   status   - [boolean] whether visualization was successfully generated (1) or not (0)
 function [EEG, status] = eeg_nemar_vis(EEG, varargin)
-    plots_all = {'midraw', 'spectra', 'icaact', 'icmap'};
+    plots_all = {'midraw', 'spectra', 'icaact', 'icmap', 'icahist'};
     status = 0;
     opt = finputcheck(varargin, { ...
         'plots'          'cell'      {}                      plots_all; ...                     % visualization plots
@@ -77,6 +77,10 @@ function [EEG, status] = eeg_nemar_vis(EEG, varargin)
 
             if strcmp(plot, 'icmap') && ~strcmp(modality, 'ieeg')
                 plot_ICLabel(EEG);
+            end
+
+            if strcmp(plot, 'icahist') && ~strcmp(modality, 'ieeg')
+                plot_ICLabelHistorgram(EEG);
             end
 
             % write status file
@@ -187,7 +191,7 @@ function [EEG, status] = eeg_nemar_vis(EEG, varargin)
             error('No IC decomposition found for EEG')
         end
 
-	% average reference before plotting
+	    % average reference before plotting
         EEG = pop_reref(EEG,[], 'interpchan', []);
 
         EEG = pop_icflag(EEG,[0.75 1;NaN NaN;NaN NaN;NaN NaN;NaN NaN;NaN NaN;NaN NaN]);
@@ -212,7 +216,7 @@ function [EEG, status] = eeg_nemar_vis(EEG, varargin)
         tmp = tmp([1:min(35, size(EEG.icaweights,1))],:); % plot only maximally first 35 ICs
         tmp = normalize(tmp, 2); % normalize before plotting
         eegplot(tmp, 'srate', EEG.srate, ...
-            'winlength', 2, 'eloc_file', iclocs, 'noui', 'on', 'title', '');
+            'winlength', 2, 'eloc_file', iclocs([1:min(35, size(EEG.icaweights,1))]), 'noui', 'on', 'title', '');
         h = findall(gcf,'-property','FontName');
         set(h,'FontName','San Serif');
         print(gcf,'-dsvg',fullfile(outpath, [ result_basename '_icaact.svg' ]))
@@ -231,6 +235,46 @@ function [EEG, status] = eeg_nemar_vis(EEG, varargin)
         EEG.icawinv = bsxfun(@minus, EEG.icawinv, mean(EEG.icawinv,1));
         pop_viewprops( EEG, 0, [1:min(35, size(EEG.icaweights,1))], {'freqrange', [2 64]}, {}, 1, 'ICLabel');
         print(gcf,'-dsvg','-noui',fullfile(outpath,[ result_basename '_icamaps.svg' ]))
+        close
+    end
+
+    function plot_ICLabelHistorgram(EEG)
+        result_basename = EEG.filename(1:end-4); % for plots
+        outpath = EEG.filepath;
+        disp('Plotting ICLabel histogram...');
+        if isempty(EEG.icaweights)
+            error('No IC decomposition found for EEG')
+        end
+        figure('position', [629   759   896   578], 'color', 'w');
+        colors = {[1 0 0] [0 1 0] [0 0 1] [0.5 0.5 1] [0 0.5 0.5] [0.5 0 0.5]};
+        for iClass = 1:7
+            subplot(2,4,iClass)
+            [~,ind] = max(EEG.etc.ic_classification.ICLabel.classifications');
+            indSelect = ind == iClass;
+            probs = EEG.etc.ic_classification.ICLabel.classifications;
+            probSelect1 = probs(indSelect, iClass);
+            probSelect2 = probs(~indSelect, iClass);
+            % adding up counts (should then use bar instead of hist)
+            N1 = histc(probSelect1,10:10:100);
+            N2 = histc(probSelect2,10:10:100);
+            probSelect2(probSelect2 < 0.05) = [];
+            hist2(probSelect1*100, probSelect2*100, -5:10:105);
+            yl(iClass) = max(ylim);
+            %, 'color', colors{iClass}
+            title(EEG.etc.ic_classification.ICLabel.classes{iClass})
+            ylabel('Number of components')
+            xlabel('Percentage score range')
+            xlim([10 100])
+            if iClass == 7
+                h = legend({'Selected components' 'Not selected components' });
+                set(h, 'position', [0.75 0.3938 0.1618 0.0458]);
+            end
+        end
+
+        for iClass = 1:7
+            subplot(2,4,iClass)
+        end
+        print(gcf,'-dsvg','-noui',fullfile(outpath,[ result_basename '_icahist.svg' ]))
         close
     end
 end

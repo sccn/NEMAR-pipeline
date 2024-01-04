@@ -31,6 +31,13 @@ function jobid = eeg_create_and_submit_job(dsnumber, filepath, varargin)
         for i = 1:length(varargin)-1
             if islogical(varargin{i}) || isnumeric(varargin{i})
                 fprintf(fid, '%d,', varargin{i});
+            elseif iscell(varargin{i})
+                fprintf(fid, '{');
+                cellcontent = varargin{i};
+                for c=1:numel(cellcontent)
+                    fprintf(fid, '''%s'',', cellcontent{c});
+                end
+                fprintf(fid, '},');
             else
                 fprintf(fid, '''%s'',', varargin{i});
             end
