@@ -127,8 +127,6 @@ def append_debug(df, processing):
     path = os.path.join(processed_dir, df['dsnumber'][0])
     if not os.path.exists(os.path.join(path, 'logs', 'debug')):
         os.mkdir(os.path.join(path, 'logs', 'debug'))
-        os.system(f'chgrp -R nemar {os.path.join(path, "logs", "debug")}')
-        os.system(f'chmod -R 775 {os.path.join(path, "logs", "debug")}')
     notes = ""
     if os.path.isdir(path):
         if check_status(df):
@@ -165,6 +163,16 @@ def append_debug(df, processing):
                 # os.chmod(manual_debug_note, 0o664) # add write permission to group
             except:
                 print(f'Cannot change permission for {manual_debug_note}')
+
+        # add nemar group and change permission
+        try:
+            # status = os.system(f'chgrp -R nemar {os.path.join(path, "logs", "debug")}')
+            completed = subprocess.run(['chgrp', '-R nemar', os.path.join(path, "logs", "debug")], capture_output=True)
+            # print('status: ',status)
+            completed = subprocess.run(['chmod', '-R', '775', os.path.join(path, "logs", "debug")], capture_output=True)
+            # os.system(f'chmod -R 775 {os.path.join(path, "logs", "debug")}')
+        except:
+            pass
 
         with open(manual_debug_note, 'r') as file:
             data = file.read()
