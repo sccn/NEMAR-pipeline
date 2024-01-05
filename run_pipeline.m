@@ -16,8 +16,8 @@ opt = finputcheck(varargin, { ...
     'modeval'                 'string'    {'new', 'resume'}       'new'; ...                                                      % if new mode, pipeline will overwrite existing outputdir. resume won't 
     'preprocess'              'boolean'   {}                      true; ...
     'preprocess_pipeline'     'cell'      {}                      {'check_import', 'check_chanloc', 'remove_chan', 'cleanraw', 'avg_ref', 'runica', 'iclabel'}; ...  % preprocessing steps
-    'vis'                     'boolean'   {}                      true; ...
-    'vis_plots'               'cell'      {}                      {'midraw', 'spectra', 'icaact', 'icmap', 'icahist'}; ...                     % visualization plots
+    'plugin'                  'boolean'   {}                      true; ...
+    'plugin_exclude'          'cell'      {}                      {}; ...               % plugins to exclude from running      
     'dataqual'                'boolean'   {}                      true; ...
     'maxparpool'              'integer'   {}                      0; ...                                                           % if 0, sequential processing
     'legacy'                  'boolean'   {}                      false; ...                                                           % if 0, sequential processing
@@ -94,7 +94,6 @@ end
 
 % set up pipeline sequence
 pipeline = opt.preprocess_pipeline;
-plots = opt.vis_plots; 
 
 pop_editoptions( 'option_storedisk', 1);
 disp(opt.modeval)
