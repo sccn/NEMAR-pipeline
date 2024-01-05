@@ -243,7 +243,7 @@ def aggregate_ind_status(dsnumber):
     log_dir = os.path.join(processed_dir, dsnumber, 'logs', 'eeg_logs')
     frames = []
     # so we also append the viz and dataqual columns to the ind df
-    all_cols = ['set_file', 'check_import', 'check_chanloc', 'remove_chan', 'cleanraw', 'avg_ref', 'runica', 'iclabel', 'midraw', 'spectra', 'icaact', 'icmap', 'icahist', 'dataqual']
+    all_cols = ['set_file', 'check_import', 'check_chanloc', 'remove_chan', 'cleanraw', 'avg_ref', 'runica', 'iclabel', 'dataqual']
     # print(log_dir)
     # print(os.path.exists(log_dir))
     if os.path.exists(log_dir):
@@ -268,13 +268,6 @@ def aggregate_ind_status(dsnumber):
                     df['check_import'] = 1 if df['remove_chan'][0] > 0 else 0
                 if 'check_chanloc' not in df_preprocess:
                     df['check_chanloc'] = 1 if df['iclabel'][0] == 1 else 0
-
-                vis_status_file = os.path.join(log_dir, f[:-len('preprocess.csv')]+'vis.csv')
-                if os.path.exists(vis_status_file):
-                    df_vis = pd.read_csv(vis_status_file)
-                    for colname, val in df_vis.items():
-                        if colname in df:
-                            df[colname] = val[0]
 
                 dataqual_status_file = os.path.join(log_dir, f[:-len('preprocess.csv')]+'dataqual.csv')
                 if os.path.exists(dataqual_status_file):

@@ -17,8 +17,8 @@ function eeg_run_pipeline(dsnumber, filepath, varargin)
         'modeval'                 'string'    {'new', 'resume'}       'new'; ...                                                      % if new mode, pipeline will overwrite existing outputdir. resume won't 
         'preprocess'              'boolean'   {}                      true; ...
         'preprocess_pipeline'     'cell'      {}                      {'check_import', 'check_chanloc', 'remove_chan', 'cleanraw', 'avg_ref', 'runica', 'iclabel'}; ...  % preprocessing steps
-        'vis'                     'boolean'   {}                      true; ...
-        'vis_plots'               'cell'      {}                      {'midraw', 'spectra', 'icaact', 'icmap', 'icahist'}; ...                     % visualization plots
+        'plugin'                  'boolean'   {}                      true; ...
+        'plugin_exclude'          'cell'      {}                      {}; ...                     % plugins to exclude from running
         'dataqual'                'boolean'   {}                      true; ...
         'maxparpool'              'integer'   {}                      0; ...                                                           % if 0, sequential processing
         'legacy'                  'boolean'   {}                      false; ...                                                           % if 0, sequential processing
@@ -52,7 +52,6 @@ function eeg_run_pipeline(dsnumber, filepath, varargin)
     diary(log_file);
     
     pipeline = opt.preprocess_pipeline;
-    plots = opt.vis_plots; 
     
     % run pipeline
     if opt.maxparpool > 0
@@ -67,14 +66,14 @@ function eeg_run_pipeline(dsnumber, filepath, varargin)
         [EEG, ~] = eeg_nemar_preprocess(EEG, 'pipeline', pipeline, 'logdir', eeg_logdir, 'modeval', opt.modeval, 'resave', opt.resave);
     end
     
-    % visualization
-    if opt.vis
-        [EEG, ~] = eeg_nemar_vis(EEG, 'plots', plots, 'logdir', eeg_logdir, 'legacy', opt.legacy);
-    end
-    
     % data quality
     if opt.dataqual
         eeg_nemar_dataqual(EEG, 'logdir', eeg_logdir, 'legacy', opt.legacy);
+    end
+    
+    % plugins (including visualization)
+    if opt.plugin
+        EEG = eeg_nemar_plugin(EEG, 'logdir', eeg_logdir, 'exclude', opt.plugin_exclude);
     end
     
     disp('Finished running pipeline on EEG.');

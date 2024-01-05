@@ -11,9 +11,7 @@ import re
 import json
 
 raw_dir = "/data/qumulo/openneuro"
-# processed_dir = "/data/qumulo/openneuro/processed"
-# processed_dir = "/expanse/projects/nemar/eeglab/plugins/NEMAR-pipeline"
-processed_dir = "/data/qumulo/eeglab/plugins/NEMAR-pipeline"
+processed_dir = "/data/qumulo/openneuro/processed"
 sccn_dir = "/var/local/www/eeglab/NEMAR"
 final_file = os.path.join(sccn_dir,"pipeline_status_plugins_all.csv") #"/data/qumulo/openneuro/processed/logs/pipeline_status_all.csv" #"/expanse/projects/nemar/dtyoung/NEMAR-pipeline/temp/processed/pipeline_status_all.csv"
 final_file_html = os.path.join(sccn_dir,"pipeline_status_plugins_all.html") #"/data/qumulo/openneuro/processed/logs/pipeline_status_all.html" 
@@ -268,7 +266,7 @@ def get_pipeline_status(dsnumbers):
 
                 path = os.path.join(processed_dir, f)
                 if os.path.isdir(path):
-                    status_file = os.path.join(path, "logs", "pipeline_status.csv")
+                    status_file = os.path.join(path, "logs", "pipeline_plugins_status.csv")
                     if os.path.isfile(status_file):
                         df = pd.read_csv(status_file)
                         df = append_custom(df, processing)
@@ -277,6 +275,11 @@ def get_pipeline_status(dsnumbers):
 
         all_status = pd.concat(frames)
 
+    # rearrange column
+    first_column = all_status.pop('debug_note') 
+    all_status.insert(len(all_status.columns), 'debug_note', first_column) 
+    first_column = all_status.pop('manual_debug_note') 
+    all_status.insert(len(all_status.columns), 'manual_debug_note', first_column) 
     return all_status
 
 if __name__ == "__main__":
