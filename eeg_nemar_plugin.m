@@ -67,7 +67,7 @@ function EEG = eeg_nemar_plugin(EEG, varargin)
     status_tbl.Properties.VariableNames = plugins;
     for p=1:numel(plugins)
         plugin = plugins{p};
-        status_tbl.(plugin) = 1;
+        status_tbl.(plugin) = status(p);
     end
     disp(status_tbl)
     writetable(status_tbl, status_file);
