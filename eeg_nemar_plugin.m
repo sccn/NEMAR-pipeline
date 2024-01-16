@@ -24,13 +24,14 @@ function EEG = eeg_nemar_plugin(EEG, varargin)
         addpath('/expanse/projects/nemar/eeglab');
         eeglab nogui;
     end
-
+    
     [filepath, filename, ext] = fileparts(EEG.filename);
     log_file = fullfile(opt.logdir, filename);
 
     diary(log_file);
 
     fprintf('Running NEMAR plugins on %s\n', fullfile(EEG.filepath, EEG.filename));
+    opt
 
     % retrieve plugin from nemar_plugins folder 
     path = fileparts(which('pop_run_pipeline'));
@@ -49,12 +50,13 @@ function EEG = eeg_nemar_plugin(EEG, varargin)
     modality = splitted{end};
     status = zeros(1,numel(plugins));
     for i=1:numel(plugins)
-        if any(~contains(opt.exclude, plugins{i}))
+        if ~any(contains(opt.exclude, plugins{i}))
             fcn = ['nemar_plugin_' plugins{i}];
             try
                 [finished, templateFields] = feval(fcn, EEG, modality);
                 status(i) = finished;
             catch ME
+                fprintf('Error running plugin %s\n', plugins{i});
                 status(i) = 0;
                 ME
             end

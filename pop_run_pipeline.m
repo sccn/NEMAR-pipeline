@@ -70,7 +70,7 @@ if ~isempty(res.rmsubjects)
     res.subjects = sprintf('%s ', setdiff(1:size(participants,1)-1, str2num(res.rmsubjects)));
 end
 
-otherOtions = {'modeval', 'new', 'preprocess', true, 'vis', false, 'dataqual', false, 'preprocess_pipeline', {'check_chanloc', 'remove_chan'}, 'run_local', true, 'ctffunc', ctffunc{res.ctffunc} };
+otherOtions = {'modeval', 'new', 'preprocess', true, 'plugin', false, 'dataqual', false, 'preprocess_pipeline', {'check_chanloc', 'remove_chan'}, 'run_local', true, 'ctffunc', ctffunc{res.ctffunc} };
 command = sprintf('\nrun_pipeline(''%s'', ''subjects'', [%s], ''outputdir'', ''%s'',  ''logdir'', ''%s'', %s);\n\n', bidsName, res.subjects, res.out_select, [res.out_select '/logs'], vararg2str(otherOtions));
 
 if res.clean_run == 1
