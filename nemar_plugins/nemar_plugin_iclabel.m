@@ -16,7 +16,8 @@ function [status, templateFields] = nemar_plugin_iclabel(EEG, modality)
         figure;
         EEG.icawinv = bsxfun(@minus, EEG.icawinv, mean(EEG.icawinv,1));
         pop_viewprops( EEG, 0, [1:min(35, size(EEG.icaweights,1))], {'freqrange', [2 64]}, {}, 1, 'ICLabel');
-        print(gcf,'-dsvg',fullfile(outpath,[ result_basename '_icamaps.svg' ]))
+        print(gcf,'-dsvg','-noui',fullfile(outpath,[ result_basename '_icamaps.svg' ])) % not having -noui gave error
+        % Printing of uicontrols is not supported on this platform.'
         close
 
         status = 1;

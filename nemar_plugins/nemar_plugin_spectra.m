@@ -8,9 +8,9 @@ function [status, templateFields] = nemar_plugin_spectra(EEG, modality)
     outpath = EEG.filepath;
 
     disp('Plotting spectra...');
-    g = finputcheck(varargin, { 'freq'    'integer' []         [6, 10, 22]; ...
-                    'freqrange'   'integer'   []         [1 70]; ...
-                    'percent'   'integer'    [], 10});
+    g.freq = [6, 10, 22]; 
+    g.freqrange = [1 70];
+    g.percent = 10;
 	
 	% average reference before plotting
     EEG = pop_reref(EEG,[], 'interpchan', []);
