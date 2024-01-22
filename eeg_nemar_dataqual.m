@@ -1,4 +1,4 @@
-function eeg_nemar_dataqual(EEG, varargin)
+function cur_report = eeg_nemar_dataqual(EEG, varargin)
     import java.text.* % for json formatting
     metrics_all = {'dataqual'}; % for now. In future it would be broken down, e.g. {'dataP', 'chanP', 'icaP'};
     opt = finputcheck(varargin, { ...
