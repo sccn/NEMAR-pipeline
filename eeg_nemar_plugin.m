@@ -1,12 +1,11 @@
-% NEMAR visualization pipeline
+% NEMAR plugin pipeline
 % Required input:
 %   EEG      - [struct]  input dataset
 % Optional inputs:
-%   plots - [cell]    list of measures to plot
+%   specific - [cell]    plugins to specifically run
 %   logdir   - [string]  directory to log execution output
 % Output:
 %   EEG      - [struct]  plotted dataset
-%   status   - [boolean] whether visualization was successfully generated (1) or not (0)
 function EEG = eeg_nemar_plugin(EEG, varargin)
     opt = finputcheck(varargin, { ...
         'specific'       'cell'      {}      {}; ...                     % plugins to specifically run
@@ -65,11 +64,25 @@ function EEG = eeg_nemar_plugin(EEG, varargin)
 
     % log results
     status_file = fullfile(opt.logdir, [EEG.filename(1:end-4) '_plugins.csv']);
-    status_tbl = array2table(zeros(1, numel(plugins)));
-    status_tbl.Properties.VariableNames = plugins;
-    for p=1:numel(plugins)
-        plugin = plugins{p};
-        status_tbl.(plugin) = status(p);
+    if exist(status_file, 'file') && ~isempty(opt.specific)
+        disp('status exist')
+        status
+        status_tbl = readtable(status_file);
+        for p=1:numel(plugins)
+            plugin = plugins{p}
+            if any(strcmp(opt.specific, plugin))
+                plugin
+                status(p)
+                status_tbl.(plugin) = status(p);
+            end
+        end
+    else
+        status_tbl = array2table(zeros(1, numel(plugins)));
+        status_tbl.Properties.VariableNames = plugins;
+        for p=1:numel(plugins)
+            plugin = plugins{p};
+            status_tbl.(plugin) = status(p);
+        end
     end
     disp(status_tbl)
     writetable(status_tbl, status_file);

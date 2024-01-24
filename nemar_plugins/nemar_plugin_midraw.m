@@ -25,5 +25,5 @@ function [status, templateFields] = nemar_plugin_midraw(EEG, modality)
         'winlength', 2, 'eloc_file', EEG.chanlocs, 'noui', 'on', 'title','', 'events', EEG.event);
     print(gcf,'-dsvg','-noui',fullfile(outpath, [ result_basename '_eegplot_mid-sample.svg' ]));
     close
-    status = 0;
+    status = 1;
 end

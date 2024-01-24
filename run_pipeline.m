@@ -82,10 +82,9 @@ if strcmp(opt.modeval, "new")
     mkdir(fullfile(opt.logdir, 'eeg_logs'));
 
     % enable logging to file
-    if exist(log_file, 'file')
+    if exist(log_file)
         delete(log_file)
     end
-    diary(log_file);
 
     % import data
     if ~exist(fullfile(opt.bidspath,'dataset_description.json'), 'file')
@@ -93,11 +92,12 @@ if strcmp(opt.modeval, "new")
     end
 end
 
+diary(log_file);
+fprintf('Pipeline run on %s\n', string(datetime('today')));
 % set up pipeline sequence
 pipeline = opt.preprocess_pipeline;
 
 pop_editoptions( 'option_storedisk', 1);
-disp(opt.modeval)
 [STUDY, ALLEEG, dsname] = load_dataset(opt.bidspath, opt.outputdir, opt.modeval, opt.subjects, opt.ctffunc);
 
 if opt.verbose
