@@ -18,7 +18,7 @@ function eeg_run_pipeline(dsnumber, filepath, varargin)
         'preprocess'              'boolean'   {}                      true; ...
         'preprocess_pipeline'     'cell'      {}                      {'check_import', 'check_chanloc', 'remove_chan', 'cleanraw', 'avg_ref', 'runica', 'iclabel'}; ...  % preprocessing steps
         'plugin'                  'boolean'   {}                      true; ...
-        'plugin_exclude'          'cell'      {}                      {}; ...                     % plugins to exclude from running
+        'plugin_specific'          'cell'      {}                      {}; ...                     % plugins to specifically run
         'dataqual'                'boolean'   {}                      true; ...
         'maxparpool'              'integer'   {}                      0; ...                                                           % if 0, sequential processing
         'legacy'                  'boolean'   {}                      false; ...                                                           % if 0, sequential processing
@@ -73,7 +73,7 @@ function eeg_run_pipeline(dsnumber, filepath, varargin)
     
     % plugins (including visualization)
     if opt.plugin
-        EEG = eeg_nemar_plugin(EEG, 'logdir', eeg_logdir, 'exclude', opt.plugin_exclude);
+        EEG = eeg_nemar_plugin(EEG, 'logdir', eeg_logdir, 'specific', opt.plugin_specific);
     end
     
     disp('Finished running pipeline on EEG.');

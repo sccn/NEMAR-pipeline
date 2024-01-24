@@ -9,14 +9,13 @@
 %   status   - [boolean] whether visualization was successfully generated (1) or not (0)
 function EEG = eeg_nemar_plugin(EEG, varargin)
     opt = finputcheck(varargin, { ...
-        'exclude'        'cell'      {}      {}; ...                     % visualization plots
+        'specific'       'cell'      {}      {}; ...                     % plugins to specifically run
         'logdir'         'string'    {}      './eeg_nemar_logs'; ...
     }, 'eeg_nemar_plugin');
     if isstr(opt), error(opt); end
     if ~exist(opt.logdir, 'dir')
         logdirstatus = mkdir(opt.logdir);
     end
-
     try
         which eeglab;
     catch
@@ -50,16 +49,17 @@ function EEG = eeg_nemar_plugin(EEG, varargin)
     modality = splitted{end};
     status = zeros(1,numel(plugins));
     for i=1:numel(plugins)
-        if ~any(contains(opt.exclude, plugins{i}))
-            fcn = ['nemar_plugin_' plugins{i}];
-            try
-                [finished, templateFields] = feval(fcn, EEG, modality);
-                status(i) = finished;
-            catch ME
-                fprintf('Error running plugin %s\n', plugins{i});
-                status(i) = 0;
-                ME
-            end
+        fcn = ['nemar_plugin_' plugins{i}];
+        if ~isempty(opt.specific) && ~any(strcmp(opt.specific, plugins{i}))
+            continue
+        end
+        try
+            [finished, templateFields] = feval(fcn, EEG, modality);
+            status(i) = finished;
+        catch ME
+            fprintf('Error running plugin %s\n', plugins{i});
+            status(i) = 0;
+            ME
         end
     end
 
