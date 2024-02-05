@@ -18,7 +18,8 @@ function [STUDY, ALLEEG, dsname] = load_dataset(filepath, outputDir, modeval, su
     if ~exist(studyFile, 'file') || strcmpi(modeval, 'new')
         if ismember(dsname, useRawChans), bidsChan = 'off'; else bidsChan = 'on'; end
         disp(['bidsChan ' bidsChan]);
-        [STUDY, ALLEEG] = pop_importbids(filepath, 'bidsevent','on','bidschanloc', bidsChan,'studyName',dsname,'outputdir', outputDir, 'subjects', subjects, 'ctffunc', ctffunc);
+        [STUDY, ALLEEG, ~, stats] = pop_importbids(filepath, 'bidsevent','on','bidschanloc', bidsChan,'studyName',dsname,'outputdir', outputDir, 'subjects', subjects, 'ctffunc', ctffunc);
+        % save stats in NEMAR
     else
         tic
         [STUDY, ALLEEG] = pop_loadstudy(studyFile);
