@@ -243,7 +243,7 @@ def aggregate_ind_status(dsnumber):
     log_dir = os.path.join(processed_dir, dsnumber, 'logs', 'eeg_logs')
     frames = []
     # so we also append the viz and dataqual columns to the ind df
-    all_cols = ['set_file', 'check_import', 'check_chanloc', 'remove_chan', 'cleanraw', 'avg_ref', 'runica', 'iclabel', 'dataqual']
+    all_cols = ['set_file', 'check_import', 'check_chanloc', 'remove_chan', 'cleanraw', 'runica', 'iclabel', 'dataqual']
     # print(log_dir)
     # print(os.path.exists(log_dir))
     if os.path.exists(log_dir):

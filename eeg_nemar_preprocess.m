@@ -12,7 +12,7 @@
 % To do: ignore non-EEG channel types instead of removing them
 
 function [EEG, status] = eeg_nemar_preprocess(EEG, varargin)
-    pipeline_all = {'check_import', 'check_chanloc', 'remove_chan', 'cleanraw', 'avg_ref', 'runica', 'iclabel'};
+    pipeline_all = {'check_import', 'check_chanloc', 'remove_chan', 'cleanraw', 'runica', 'iclabel'};
     opt = finputcheck(varargin, { ...
         'pipeline'       'cell'      {}                      pipeline_all; ...  % preprocessing steps
         'logdir'         'string'    {}                      './eeg_nemar_logs'; ...
@@ -128,9 +128,12 @@ function [EEG, status] = eeg_nemar_preprocess(EEG, varargin)
                 % remove offset
                 EEG = pop_rmbase( EEG, [],[]);
 
+                % Highpass filter
+                EEG = pop_eegfiltnew(EEG, 'locutoff',0.5);
+
                 % clean data using the clean_rawdata plugin
                 options = {'FlatlineCriterion',4,'ChannelCriterion',0.85, ...
-                    'LineNoiseCriterion',4,'Highpass',[0.75 1.25] ,'BurstCriterion',20, ...
+                    'LineNoiseCriterion',4,'Highpass', 'off' ,'BurstCriterion',20, ...
                     'WindowCriterion',0.25,'BurstRejection','on','Distance','Euclidian', ...
                     'WindowCriterionTolerances',[-Inf 7] ,'fusechanrej',1}; % based on Arnaud paper
                 EEG = pop_clean_rawdata( EEG, options{:});
