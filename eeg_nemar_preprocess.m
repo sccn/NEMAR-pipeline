@@ -16,7 +16,7 @@ function [EEG, status] = eeg_nemar_preprocess(EEG, varargin)
     opt = finputcheck(varargin, { ...
         'pipeline'       'cell'      {}                      pipeline_all; ...  % preprocessing steps
         'logdir'         'string'    {}                      './eeg_nemar_logs'; ...
-        'modeval'        'string'    {'new', 'resume'}    'resume'; ...                                                      % if import mode, pipeline will overwrite existing outputdir. rerun won't 
+        'modeval'        'string'    {'new', 'resume', 'rerun'}    'resume'; ...                                                      % if import mode, pipeline will overwrite existing outputdir. rerun won't 
         'resave'         'boolean'   {}                      true; ...
     }, 'eeg_nemar_preprocess');
     if isstr(opt), error(opt); end
@@ -141,32 +141,24 @@ function [EEG, status] = eeg_nemar_preprocess(EEG, varargin)
                 status_tbl.cleanraw = 1;
             end
 
-	    %{
-            if strcmp(operation, "avg_ref")
-                if resume && status_tbl.avg_ref
-                    fprintf('Skipping avg_ref\n');
-                    continue
-                end
-                % recompute average reference interpolating missing channels (and removing
-                % them again after average reference - STUDY functions handle them automatically)
-                options = {[], 'interpchan', []};
-                EEG = pop_reref( EEG,options{:});
-
-                status_tbl.avg_ref = 1;
-            end
-	    %}
-
             if strcmp(operation, "runica")
                 if resume && status_tbl.runica
                     fprintf('Skipping runica\n');
                     continue
                 end
                 % run ICA reducing the dimention by 1 to account for average reference 
-                nChans = EEG.nbchan;
-                lrate = 0.00065/log(mean(nChans))/10; % not the runica default - suggested by Makoto approximately 12/22
-                % options = {'icatype','runica','concatcond','on', 'pca',-1, 'extended', 1, 'lrate', lrate, 'maxsteps', 2000};
-                options = {'icatype','runica','concatcond','on', 'extended', 1, 'lrate', 1e-5, 'maxsteps', 2000};
-                EEG = pop_runica(EEG, options{:});
+                K = 4; % TODO: use Arno's formula
+                if K >= 5
+                    fprintf('Running amica\n');
+                    options = {'batch', 1};
+                    EEG = runamica17_nsg(EEG, options{:});
+                else
+                    fprintf('Running extended ICA\n');
+                    nChans = EEG.nbchan;
+                    lrate = 0.00065/log(mean(nChans))/10; % not the runica default - suggested by Makoto approximately 12/22
+                    options = {'icatype','runica','concatcond','on', 'extended', 1, 'lrate', 1e-5, 'maxsteps', 2000};
+                    EEG = pop_runica(EEG, options{:});
+                end
 
                 status_tbl.runica = 1;
             end
@@ -202,3 +194,18 @@ function [EEG, status] = eeg_nemar_preprocess(EEG, varargin)
     % close log file
     diary off
 end
+
+	    %{
+            if strcmp(operation, "avg_ref")
+                if resume && status_tbl.avg_ref
+                    fprintf('Skipping avg_ref\n');
+                    continue
+                end
+                % recompute average reference interpolating missing channels (and removing
+                % them again after average reference - STUDY functions handle them automatically)
+                options = {[], 'interpchan', []};
+                EEG = pop_reref( EEG,options{:});
+
+                status_tbl.avg_ref = 1;
+            end
+	    %}
