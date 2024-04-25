@@ -47,7 +47,9 @@ function [status, templateFields] = nemar_plugin_iclabel_hist(EEG, modality)
             xlim([0 100])
             xticks(0:10:100)
             yticks_logs = yticks;
-            yticks_logs = [yticks_logs(1) virtual_one yticks_logs(2:end)];
+            if ~any(virtual_one == yticks_logs)
+                yticks_logs = [yticks_logs(1) virtual_one yticks_logs(2:end)];
+            end
             yticks(yticks_logs);
             yticklabels([' ' strsplit(num2str([1 round(10.^yticks_logs(3:end))]), ' ')])
             title(sprintf('%s (%d of %d)', EEG.etc.ic_classification.ICLabel.classes{iClass}, sum(prob1c_raw), numel(ind))); % subplot title
