@@ -21,6 +21,7 @@ opt = finputcheck(varargin, { ...
     'plugin_specific'         'cell'      {}                      {}; ...               % plugins to specifically run      
     'dataqual'                'boolean'   {}                      true; ...
     'maxparpool'              'integer'   {}                      0; ...                                                           % if 0, sequential processing
+    'memory'                  'integer'   {}                      32; ...               % batch job memory size for each datarun
     'legacy'                  'boolean'   {}                      false; ...                                                           % if 0, sequential processing
     'run_local'               'boolean'   {}                      false; ...
     'ctffunc'                 'string'    {}                      'fileio'; ...
@@ -105,14 +106,23 @@ if opt.verbose
     ALLEEG(1).chanlocs(1)
 end
 
+% filter out varargin that don't apply to eeg_run_pipeline
+eeg_run_params = {'eeglabroot', 'logdir', 'resave', 'modeval', 'preprocess', 'preprocess_pipeline', ...
+                    'plugin', 'plugin_specific', 'dataqua', 'maxparpool', 'legacy', 'verbose'};
+eeg_run_varargin = {};
+for p=1:2:numel(varargin)
+    if contains(varargin{p}, eeg_run_params)
+        eeg_run_varargin = [eeg_run_varargin varargin{p} varargin{p+1}];
+    end
+end
 sbatch_logpath = '/expanse/projects/nemar/openneuro/processed/logs';
 fid = fopen(fullfile(sbatch_logpath, [dsnumber '_jobids.csv']), 'w');
 for i=1:numel(ALLEEG)
     filepath = fullfile(ALLEEG(i).filepath, ALLEEG(i).filename);
     if opt.run_local
-        eeg_run_pipeline(dsnumber, filepath, varargin{:});
+        eeg_run_pipeline(dsnumber, filepath, eeg_run_varargin{:});
     else
-        jobid = eeg_create_and_submit_job(dsnumber, filepath, varargin{:});
+        jobid = eeg_create_and_submit_job(dsnumber, filepath, opt.memory, eeg_run_varargin{:});
         fprintf(fid, '%s,%s\n', filepath, jobid);
     end
 end

@@ -1,4 +1,4 @@
-function jobid = eeg_create_and_submit_job(dsnumber, filepath, varargin)
+function jobid = eeg_create_and_submit_job(dsnumber, filepath, memory, varargin)
     path = ['/expanse/projects/nemar/openneuro/processed/logs/' dsnumber];
     if ~exist(path, 'dir')
         mkdir(path);
@@ -10,7 +10,7 @@ function jobid = eeg_create_and_submit_job(dsnumber, filepath, varargin)
     fprintf(fid,"#SBATCH -J %s\n", dsnumber);
     fprintf(fid,"#SBATCH --partition=shared\n");
     fprintf(fid,"#SBATCH --nodes=1\n");
-    fprintf(fid,"#SBATCH --mem=32G\n");
+    fprintf(fid,"#SBATCH --mem=%dG\n", memory);
     fprintf(fid,"#SBATCH -o %s/%s.out\n", path, filename);
     fprintf(fid,"#SBATCH -e %s/%s.err\n", path, filename);
     fprintf(fid,"#SBATCH -t 10:00:00\n");
