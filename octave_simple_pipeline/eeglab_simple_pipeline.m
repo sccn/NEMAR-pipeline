@@ -1,4 +1,4 @@
-eeglabpath = pwd;
+eeglabpath = fileparts(fileparts(fileparts(pwd)));
 addpath(pwd);
 
 addpath(fullfile( eeglabpath, [ 'functions' filesep 'adminfunc'        ]));
