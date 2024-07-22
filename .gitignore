@@ -6,3 +6,7 @@ ds002718/
 ds*/
 processed-*
 HED/hed_python/
+web/nemar_access_token
+*logs/
+.conda/
+.vscode/

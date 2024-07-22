@@ -1,10 +1,10 @@
 function run_pipeline(dsnumber, varargin)
 nemar_path = '/expanse/projects/nemar/openneuro';
-eeglabroot = '/expanse/projects/nemar/dtyoung/NEMAR-pipeline';
-
+eeglabroot = '/expanse/projects/nemar/eeglab';
+pipelineroot = fullfile(eeglabroot, 'plugins', 'NEMAR-pipeline');
+addpath(fullfile(pipelineroot,'JSONio'));
 if isempty(which('finputcheck'))
-    addpath(fullfile(eeglabroot,'eeglab'));
-    addpath(fullfile(eeglabroot,'JSONio'));
+    addpath(eeglabroot);
     eeglab nogui;
 end
 
@@ -13,14 +13,19 @@ opt = finputcheck(varargin, { ...
     'eeglabroot'              'string'    {}                      eeglabroot; ...
     'outputdir'               'string'    { }                     fullfile(nemar_path, 'processed', dsnumber); ...
     'logdir'                  'string'    {}                      fullfile(nemar_path, 'processed', dsnumber, 'logs'); ...
-    'copycode'                'boolean'   {}                      true; ...
-    'modeval'                 'string'    {'new', 'resume'}       'new'; ...                                                      % if new mode, pipeline will overwrite existing outputdir. resume won't 
+    'modeval'                 'string'    {'new', 'resume', 'rerun'}       'resume'; ...                                                      % if new mode, pipeline will overwrite existing outputdir. resume won't 
+    'import_options'          'cell'      {}                      {}; ...
     'preprocess'              'boolean'   {}                      true; ...
-    'preprocess_pipeline'     'cell'      {}                      {'remove_chan', 'cleanraw', 'avg_ref', 'runica', 'iclabel'}; ...  % preprocessing steps
-    'vis'                     'boolean'   {}                      true; ...
-    'vis_plots'               'cell'      {}                      {'midraw', 'spectra', 'icaact', 'icmap'}; ...                     % visualization plots
+    'preprocess_pipeline'     'cell'      {}                      {'check_import', 'check_chanloc', 'remove_chan', 'cleanraw', 'runica', 'iclabel'}; ...  % preprocessing steps
+    'plugin'                  'boolean'   {}                      true; ...
+    'plugin_specific'         'cell'      {}                      {}; ...               % plugins to specifically run      
     'dataqual'                'boolean'   {}                      true; ...
-    'maxparpool'              'integer'   {}                      64; ...                                                           % if 0, sequential processing
+    'maxparpool'              'integer'   {}                      0; ...                                                           % if 0, sequential processing
+    'memory'                  'integer'   {}                      32; ...               % batch job memory size for each datarun
+    'legacy'                  'boolean'   {}                      false; ...                                                           % if 0, sequential processing
+    'run_local'               'boolean'   {}                      false; ...
+    'ctffunc'                 'string'    {}                      'fileio'; ...
+    'subjects'                'integer'  []                      []; ... 
     'verbose'                 'boolean'   {}                      true; ...
     }, 'run_pipeline');
 if isstr(opt), error(opt); end
@@ -28,8 +33,7 @@ if isstr(opt), error(opt); end
 opt
 % reload eeglab if different version specified
 if ~strcmp(eeglabroot, opt.eeglabroot)
-    addpath(fullfile(opt.eeglabroot,'eeglab'));
-    addpath(fullfile(opt.eeglabroot,'JSONio'));
+    addpath(opt.eeglabroot);
     eeglab nogui;
     if opt.verbose
 	which pop_importbids;
@@ -38,19 +42,29 @@ end
 
 eeg_logdir = fullfile(opt.logdir, 'eeg_logs');
 log_file = fullfile(opt.logdir, 'matlab_log');
-codeDir = fullfile(opt.logdir, "code");
+codeDir = fullfile(opt.outputdir, "code");
 if strcmp(opt.modeval, "new")
     % create output directories
     if opt.verbose
         fprintf('Output dir: %s\n', opt.outputdir);
     end
     if exist(opt.outputdir, 'dir')
+	if exist(codeDir, 'dir') && exist(fullfile(codeDir, 'nemar.json'))
+	    if ~exist(fullfile(pipelineroot, 'temp-nemar-json'), 'dir')
+		mkdir(fullfile(pipelineroot, 'temp-nemar-json'));
+	    end
+	    [status, msg] = copyfile(fullfile(codeDir, 'nemar.json'), fullfile(pipelineroot, 'temp-nemar-json', [dsnumber '_nemar.json']))
+	    if status ~= 1
+		error('Error backing up nemar.json file');
+	    end
+	end
         rmdir(opt.outputdir, 's');
     end
     status = mkdir(opt.outputdir);
     if ~status
         error('Could not create output directory');
     else
+	status = copyfile(fullfile(pipelineroot, 'temp-nemar-json', [dsnumber '_nemar.json'], fullfile(codeDir, 'nemar.json')));
         disp("Output directory created");
     end
 
@@ -69,10 +83,9 @@ if strcmp(opt.modeval, "new")
     mkdir(fullfile(opt.logdir, 'eeg_logs'));
 
     % enable logging to file
-    if exist(log_file, 'file')
+    if exist(log_file)
         delete(log_file)
     end
-    diary(log_file);
 
     % import data
     if ~exist(fullfile(opt.bidspath,'dataset_description.json'), 'file')
@@ -80,156 +93,40 @@ if strcmp(opt.modeval, "new")
     end
 end
 
-% save the latest version of the pipeline
-if opt.copycode
-    if opt.verbose
-        disp("Creating code dir and copying pipeline code");
-    end
-    mkdir(codeDir)
-    scripts = {'load_dataset.m', 'run_pipeline.m', 'eeg_nemar_preprocess.m', 'eeg_nemar_vis.m', 'generate_report.m'};
-    for s=1:numel(scripts)
-        script_src = fullfile(eeglabroot, scripts{s});
-        script_dest = fullfile(codeDir, scripts{s});
-        if exist(script_dest, 'file')
-            delete(script_dest);
-        end
-        copyfile(script_src, script_dest);
-    end
-end
-
-% set up pipeline sequence and report
-status_file = fullfile(opt.logdir, 'pipeline_status.csv');
+diary(log_file);
+fprintf('Pipeline run on %s\n', string(datetime('today')));
+% set up pipeline sequence
 pipeline = opt.preprocess_pipeline;
-plots = opt.vis_plots; 
-if strcmp(opt.modeval, 'new')
-    % if resume, it's assumed import was already successful
-    preproc_status = -1*ones(1, numel(pipeline));
-    vis_status = -1*ones(1, numel(plots));
-    dataqual_status = -1*ones(1, 1);
-    create_status_table(status_file, "0", [pipeline plots "dataqual"], [preproc_status vis_status dataqual_status]);
-end
 
-pop_editoptions( 'option_storedisk', 0);
-[STUDY, ALLEEG, dsname] = load_dataset(opt.bidspath, opt.outputdir, opt.modeval);
-
-% if reached here, import was successful. Rewrite report table
-if strcmp(opt.modeval, 'new')
-    create_status_table(status_file, "1", [pipeline plots "dataqual"], [preproc_status vis_status dataqual_status]);
-end
+pop_editoptions( 'option_storedisk', 1);
+[STUDY, ALLEEG, dsname] = load_dataset(opt.bidspath, opt.outputdir, opt.modeval, opt.subjects, opt.ctffunc, opt.import_options{:});
 
 if opt.verbose
     disp('Check channel location after importing\n');
     ALLEEG(1).chanlocs(1)
 end
 
-% run pipeline
-if opt.maxparpool > 0
-    p = gcp('nocreate');
-    if isempty(p)
-        parpool([1 opt.maxparpool]); % debug 1, compute 128 per node
+% filter out varargin that don't apply to eeg_run_pipeline
+eeg_run_params = {'eeglabroot', 'logdir', 'resave', 'modeval', 'preprocess', 'preprocess_pipeline', ...
+                    'plugin', 'plugin_specific', 'dataqua', 'maxparpool', 'legacy', 'verbose'};
+eeg_run_varargin = {};
+for p=1:2:numel(varargin)
+    if contains(varargin{p}, eeg_run_params)
+        eeg_run_varargin = [eeg_run_varargin varargin{p} varargin{p+1}];
+    end
+end
+sbatch_logpath = '/expanse/projects/nemar/openneuro/processed/logs';
+fid = fopen(fullfile(sbatch_logpath, [dsnumber '_jobids.csv']), 'w');
+for i=1:numel(ALLEEG)
+    filepath = fullfile(ALLEEG(i).filepath, ALLEEG(i).filename);
+    if opt.run_local
+        eeg_run_pipeline(dsnumber, filepath, eeg_run_varargin{:});
+    else
+        jobid = eeg_create_and_submit_job(dsnumber, filepath, opt.memory, eeg_run_varargin{:});
+        fprintf(fid, '%s,%s\n', filepath, jobid);
     end
 end
 
-% preprocessing
-if opt.preprocess
-    parfor (i=1:numel(ALLEEG), opt.maxparpool)
-        EEG = pop_loadset('filepath', ALLEEG(i).filepath, 'filename', ALLEEG(i).filename);
-        [~, preproc_status(i,:)] = eeg_nemar_preprocess(EEG, 'pipeline', pipeline, 'logdir', eeg_logdir, 'modeval', opt.modeval);
-    end
-    write_alleeg_status_table(ALLEEG, opt.modeval, fullfile(opt.logdir, 'preproc_status.mat'), pipeline, preproc_status);
-end
-
-% visualization
-if opt.vis
-    parfor (i=1:numel(ALLEEG), opt.maxparpool)
-        EEG = pop_loadset('filepath', ALLEEG(i).filepath, 'filename', ALLEEG(i).filename);
-        [~, vis_status(i,:)] = eeg_nemar_vis(EEG, plots, eeg_logdir);
-    end
-    write_alleeg_status_table(ALLEEG, opt.modeval, fullfile(opt.logdir, 'vis_status.mat'), plots, vis_status);
-end
-
-% data quality
-if opt.dataqual
-    dataqual_status = generate_report(ALLEEG, opt.outputdir, eeg_logdir);
-    write_alleeg_status_table(ALLEEG, opt.modeval, fullfile(opt.logdir, 'dataqual_status.mat'), {'dataqual'}, dataqual_status);
-end
-
-% final step: generate summary status report
-disp('Generating status report tables');
-preproc_file = fullfile(opt.logdir, 'preproc_status.mat');
-if exist(preproc_file, 'file')
-    tbl = load(preproc_file);
-    if isfield(tbl, 'status_tbl')
-        tbl = tbl.status_tbl;
-        preproc_status = table2array(tbl);
-    end
-else
-    preproc_status = zeros(1, numel(pipeline));
-end
-vis_file = fullfile(opt.logdir, 'vis_status.mat');
-if exist(vis_file, 'file')
-    tbl = load(vis_file);
-    if isfield(tbl, 'status_tbl')
-        tbl = tbl.status_tbl;
-        vis_status = table2array(tbl);
-    end
-else
-    vis_status = zeros(1, numel(plots));
-end
-dataqual_file = fullfile(opt.logdir, 'dataqual_status.mat');
-if exist(dataqual_file, 'file')
-    tbl = load(dataqual_file);
-    if isfield(tbl, 'status_tbl')
-        tbl = tbl.status_tbl;
-        dataqual_status = table2array(tbl);
-    end
-else
-    dataqual_status = zeros(1, 1);
-end
-pipeline = {'remove_chan', 'cleanraw', 'avg_ref', 'runica', 'iclabel'};
-plots = {'midraw', 'spectra', 'icaact', 'icmap'};
-create_status_table(status_file, "1", [pipeline plots "dataqual"], [preproc_status vis_status dataqual_status]);
-
-set_status_file = fullfile(opt.logdir, 'ind_pipeline_status.csv');
-set_files = {ALLEEG.filename}; 
-set_files = reshape(set_files, [numel(ALLEEG),1]);
-set_status = [set_files num2cell(preproc_status) num2cell(vis_status) num2cell(dataqual_status)];
-set_status_headers = [{'set_file'} pipeline plots {'dataqual'}];
-set_status_tbl = cell2table(set_status, 'VariableNames', set_status_headers);
-writetable(set_status_tbl, set_status_file);
-set_status_with_headers = [set_status_headers; set_status];
-save(fullfile(opt.logdir, 'set_status.mat'), 'set_status_with_headers');
-
-disp('Finished running pipeline.');
+fclose(fid);
 diary off
-
-    function create_status_table(status_file, import_status, columns, status_values)
-        status_cols = ["dsnumber", "imported", columns{:}];
-        col_types = repelem("string", numel(status_cols)); % account for dsnumber column
-        status_tbl = table('Size', [0 numel(status_cols)], 'VariableTypes', col_types, 'VariableNames', status_cols);
-        vals = {dsnumber, import_status}; 
-        vals = [vals, arrayfun(@(i) sprintf("%d/%d", sum(status_values(:,i)), size(status_values,1)), 1:size(status_values,2), 'UniformOutput', false)];
-        status_tbl = [status_tbl; vals];
-        writetable(status_tbl, status_file);
-    end
-
-    function status_tbl = write_alleeg_status_table(ALLEEG, mode, status_file, status_cols, values)
-        % mode: if 'resume', check if there's a current status table from status_file and only modify it. 
-        %       if 'new' (anything else then 'resume'), create new table and write to status_file
-        if strcmp(mode, 'resume')
-            status_tbl = load(status_file);
-            status_tbl = status_tbl.status_tbl;
-            for c=1:numel(status_cols)
-                col = status_cols{c};      
-                for e=1:numel(ALLEEG)
-                    status_tbl.(col)(e) = values(e,c);
-                end
-            end
-            save(status_file, 'status_tbl');
-        else
-            status_tbl = array2table(values);
-            status_tbl.Properties.VariableNames = status_cols;
-            save(status_file, 'status_tbl');
-        end
-    end
 end

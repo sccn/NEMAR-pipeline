@@ -1,0 +1,15 @@
+#!/bin/bash
+#SBATCH -J pipeline
+#SBATCH --partition=shared
+#SBATCH --nodes=1
+#SBATCH --mem=16G
+#SBATCH --account=csd403
+#SBATCH --no-requeue
+#SBATCH -t 48:00:00
+#SBATCH --cpus-per-task=16
+#SBATCH --ntasks-per-node=1
+#SBATCH --output="/expanse/projects/nemar/openneuro/processed/logs/process_all/pipeline.%j.out"
+#SBATCH -e /expanse/projects/nemar/openneuro/processed/logs/process_all/pipeline.%j.err
+cd /home/dtyoung/NEMAR-pipeline/sbatch
+module load matlab/2022b
+matlab -nodisplay -r "process_all_select_datasets('modeval', 'resume');"

@@ -30,5 +30,3 @@ menui3 = findobj(fig, 'label', 'File');
 
 uimenu( menui3, 'label', 'Run NEMAR pipeline', ...
     'callback', 'pop_run_pipeline;', 'userdata', 'startup:on;study:on');
-
-
