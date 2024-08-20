@@ -53,12 +53,13 @@ uilist = { { 'style' 'text' 'string' 'NEMAR pipeline' 'fontweight' 'bold' } ...
            { 'style' 'popupmenu' 'string' ctffunc 'tag' 'ctffunc' } ...
            { } ...
            ...
-           { 'style' 'checkbox' 'string' 'Do a final clean run to update NEMAR' 'tag' 'clean_run' } ...
+           { 'style' 'checkbox' 'string' 'Run in batch mode (default parameters) or local (custom parameters above)' 'tag' 'run_batch' } ...
+           { 'style' 'checkbox' 'string' 'Use final output folder instead of debugging one above)' 'tag' 'run_final_folder' } ...
            { 'style' 'checkbox' 'string' 'Reused previously imported files' 'tag' 'reuse' 'value', 0} ...
            { 'style' 'checkbox' 'string' 'Run the cleaning pipeline' 'tag' 'preprocess' 'value', 0} ...
            { 'style' 'checkbox' 'string' 'Compute data quality' 'tag' 'dataqual' 'value', 0} ...
            };
-uigeom = { [1] [1 2 0.4] [1 2 0.4] [1 2 0.4] [1 2 0.4] [1 2 0.4] [1 2 0.4] [1] [1] [1] [1]};
+uigeom = { [1] [1 2 0.4] [1 2 0.4] [1 2 0.4] [1 2 0.4] [1 2 0.4] [1 2 0.4] 1 1 1 1 1};
 
 [~,~,~, res] = inputgui('geometry', uigeom, 'uilist', uilist);
 if isempty(res) || isempty(res.bids_select)
@@ -77,11 +78,14 @@ if ~isempty(res.rmsubjects)
     res.subjects = sprintf('%s ', setdiff(1:size(participants,1)-1, str2num(res.rmsubjects)));
 end
 
-otherOtions = {'modeval', fastif(res.reuse, 'rerun', 'new'), 'preprocess', logical(res.preprocess), 'plugin', false, 'dataqual', logical(res.dataqual), 'preprocess_pipeline', {'check_chanloc', 'remove_chan'}, 'run_local', true, 'ctffunc', ctffunc{res.ctffunc}, 'memory', str2num(res.mem) };
+otherOtions = {'modeval', fastif(res.reuse, 'rerun', 'new'), 'run_local', ~logical(res.run_batch),'preprocess', logical(res.preprocess), 'plugin', false, 'dataqual', logical(res.dataqual), 'preprocess_pipeline', {'check_chanloc', 'remove_chan'}, 'run_local', true, 'ctffunc', ctffunc{res.ctffunc}, 'memory', str2num(res.mem) };
+if res.run_final_folder
+    res.out_select = sprintf('/expanse/projects/nemar/openneuro/processed/%s', bidsName);
+end
 command = sprintf('\nrun_pipeline(''%s'', ''subjects'', [%s], ''outputdir'', ''%s'',  ''logdir'', ''%s'', %s);\n\n', bidsName, res.subjects, res.out_select, [res.out_select '/logs'], vararg2str(otherOtions));
-
-if res.clean_run == 1
-	cleanrun_command = sprintf('\nds_create_and_submit_job(''%s'');\n\n', bidsName);
+if res.run_batch
+    fprintf(2, 'You are running in batch mode, your parameters will be ignored!\n')
+    cleanrun_command = sprintf('\nds_create_and_submit_job(''%s'');\n\n', bidsName);
 	disp(cleanrun_command);
 	eval(cleanrun_command);
 else
