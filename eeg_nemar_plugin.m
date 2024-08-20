@@ -9,6 +9,7 @@
 function EEG = eeg_nemar_plugin(EEG, varargin)
     opt = finputcheck(varargin, { ...
         'specific'       'cell'      {}      {}; ...                     % plugins to specifically run
+        'modeval'        'string'    {'new', 'resume', 'rerun'}    'resume'; ...                                                      % if import mode, pipeline will overwrite existing outputdir. rerun won't 
         'logdir'         'string'    {}      './eeg_nemar_logs'; ...
     }, 'eeg_nemar_plugin');
     if isstr(opt), error(opt); end

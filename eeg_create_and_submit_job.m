@@ -1,4 +1,5 @@
 function jobid = eeg_create_and_submit_job(dsnumber, filepath, memory, varargin)
+    memory
     path = ['/expanse/projects/nemar/openneuro/processed/logs/' dsnumber];
     if ~exist(path, 'dir')
         mkdir(path);

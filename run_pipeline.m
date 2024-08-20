@@ -21,7 +21,7 @@ opt = finputcheck(varargin, { ...
     'plugin_specific'         'cell'      {}                      {}; ...               % plugins to specifically run      
     'dataqual'                'boolean'   {}                      true; ...
     'maxparpool'              'integer'   {}                      0; ...                                                           % if 0, sequential processing
-    'memory'                  'integer'   {}                      32; ...               % batch job memory size for each datarun
+    'memory'                  'integer'   {}                      16; ...               % batch job memory size for each datarun
     'legacy'                  'boolean'   {}                      false; ...                                                           % if 0, sequential processing
     'run_local'               'boolean'   {}                      false; ...
     'ctffunc'                 'string'    {}                      'fileio'; ...
@@ -112,7 +112,7 @@ eeg_run_params = {'eeglabroot', 'logdir', 'resave', 'modeval', 'preprocess', 'pr
 eeg_run_varargin = {};
 for p=1:2:numel(varargin)
     if contains(varargin{p}, eeg_run_params)
-        eeg_run_varargin = [eeg_run_varargin varargin{p} varargin{p+1}];
+        eeg_run_varargin = [eeg_run_varargin varargin(p) varargin(p+1)]
     end
 end
 sbatch_logpath = '/expanse/projects/nemar/openneuro/processed/logs';
