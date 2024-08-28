@@ -105,13 +105,14 @@ def append_modality(df):
         return df
 
 def get_latest_date(df) -> str:
-    sbatch_log_dir = os.path.join(processed_dir, 'logs', df['dsnumber'][0])
-    logfile = os.path.join(processed_dir, "logs", df['dsnumber'][0] + '.out')
+    # sbatch_log_dir = os.path.join(processed_dir, 'logs', df['dsnumber'][0])
+    status_file = os.path.join(processed_dir, df['dsnumber'][0], 'logs', 'pipeline_status.csv')
 
-    if os.path.exists(sbatch_log_dir) and os.path.exists(logfile):
-        dates = [datetime.datetime.fromtimestamp(os.path.getmtime(os.path.join(root, file)))
-                            for root, _, files in os.walk(sbatch_log_dir) for file in files]
-        latest_date = max(dates) if len(dates) > 0 else datetime.datetime.fromtimestamp(os.path.getmtime(logfile))
+    if os.path.exists(status_file): #(sbatch_log_dir): # and os.path.exists(logfile):
+        # dates = [datetime.datetime.fromtimestamp(os.path.getmtime(os.path.join(root, file)))
+                            # for root, _, files in os.walk(sbatch_log_dir) for file in files]
+        # latest_date = max(dates) if len(dates) > 0 else datetime.datetime.fromtimestamp(os.path.getmtime(logfile))
+        latest_date = datetime.datetime.fromtimestamp(os.path.getmtime(status_file))
 
         latest_sbatch = latest_date.strftime("%m-%d-%Y")
     else:
@@ -228,7 +229,7 @@ def append_custom(df, processing):
     return df
     
 def get_processing_ds():
-    result = subprocess.run(["ssh", "dtyoung@login.expanse.sdsc.edu", "squeue -u dtyoung | grep ds00*"], 
+    result = subprocess.run(["ssh", "dtyoung@login.expanse.sdsc.edu", "squeue -u arno,dtyoung,asalazar | grep ds00*"], 
                         shell=False,
                         stdout=subprocess.PIPE,
                         stderr=subprocess.PIPE,
