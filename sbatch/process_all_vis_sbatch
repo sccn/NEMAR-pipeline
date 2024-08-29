@@ -1,8 +1,8 @@
 #!/bin/bash
 #SBATCH -J nemar_vis
-#SBATCH --partition=compute
+#SBATCH --partition=shared
 #SBATCH --nodes=1
-#SBATCH --mem=128G
+#SBATCH --mem=28G
 #SBATCH --account=csd403
 #SBATCH --no-requeue
 #SBATCH -t 24:00:00

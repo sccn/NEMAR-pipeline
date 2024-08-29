@@ -1,0 +1,14 @@
+#!/bin/bash
+#SBATCH -J processing
+#SBATCH --partition=shared
+#SBATCH --nodes=1
+#SBATCH --mem=2GB
+#SBATCH --account=csd403
+#SBATCH --no-requeue
+#SBATCH -t 00:30:00
+#SBATCH --ntasks-per-node=1
+#SBATCH --output="/expanse/projects/nemar/openneuro/processed/logs/process_all/run_pipeline_new.out"
+#SBATCH -e /expanse/projects/nemar/openneuro/processed/logs/process_all/run_pipeline_new.err
+cd /home/dtyoung/NEMAR-pipeline
+module load matlab/2022b
+matlab -nodisplay -r "ds_create_and_submit_job('$1', 'modeval', 'new');"
