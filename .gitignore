@@ -10,3 +10,7 @@ web/nemar_access_token
 *logs/
 .conda/
 .vscode/
+.venv/
+web/nemar-json-spreadsheet/token.json
+web/nemar-json-spreadsheet/__pycache__/
+web/nemarapi/__pycache__/
