@@ -40,5 +40,5 @@ if __name__ == "__main__":
       "1yNVCB_pfLvrIJqy-zU3yEzrfzhFctPmYpJeWL5_PMGs",
       "A1:C2",
       "USER_ENTERED",
-      [["A1", "B1"], ["C", "D"]],
+      [["A2", "B2"], ["C", "D"]],
   )
