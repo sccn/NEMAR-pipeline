@@ -87,13 +87,15 @@ function run_pipeline(dsnumber, varargin)
             if ~status
                 error('Could not create %s directory', codeDir);
             else
-                fprintf('%s created', codeDir)
+                fprintf('%s created\n', codeDir)
             end
-            [status, msg] = copyfile(fullfile(nemar_json_backup_path, [dsnumber '_nemar.json']), fullfile(codeDir, 'nemar.json'));
-            if ~status
-                error('Could not restore nemar.json file');
-            else
-                disp("Output directory created");
+            if exist(fullfile(nemar_json_backup_path, [dsnumber '_nemar.json']), 'file')
+                [status, msg] = copyfile(fullfile(nemar_json_backup_path, [dsnumber '_nemar.json']), fullfile(codeDir, 'nemar.json'));
+                if ~status
+                    error('Could not restore nemar.json file');
+                else
+                    disp("Output directory created");
+                end
             end
         end
     
@@ -154,8 +156,11 @@ function run_pipeline(dsnumber, varargin)
             fprintf(fid, '%s,%s\n', filepath, jobid);
         end
     end
-    
     fclose(fid);
+    if opt.dataqual
+        fprintf('Running data quality check\n');
+        nemar_dataqual(dsnumber, STUDY, ALLEEG);
+    end
     diary off
     end
     

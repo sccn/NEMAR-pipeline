@@ -1,12 +1,13 @@
 function [STUDY, ALLEEG, dsname] = load_dataset(filepath, outputDir, modeval, subjects, ctffunc, varargin)
     % check EEGLAB environment
-    if plugin_status('bids-matlab-tools') == 0
-        error('BIDS-MATLAB-TOOLS plugin is not installed. Please install it before using this function.');
+    if plugin_status('bids-matlab-tools') == 0 && plugin_status('EEG-BIDS') == 0
+        error('EEG-BIDS plugin is not installed. Please install it before using this function.');
     end
 
     opt = finputcheck(varargin, {
         'bidsevent'    'string'  {}    'on';
-        'bidschanloc'      'string'  {}    'on';}, 'load_dataset');
+        'bidschanloc'      'string'  {}    'on';
+        'metadata'      'string' {}    'off';}, 'load_dataset');
     if isstr(opt), error(opt); end
 
     modeval
@@ -23,7 +24,7 @@ function [STUDY, ALLEEG, dsname] = load_dataset(filepath, outputDir, modeval, su
     if ~exist(studyFile, 'file') || strcmpi(modeval, 'new')
         if ismember(dsname, useRawChans), bidsChan = 'off'; else bidsChan = 'on'; end
         disp(['bidsChan ' bidsChan]);
-        [STUDY, ALLEEG, ~, stats] = pop_importbids(filepath, 'bidsevent', opt.bidsevent,'bidschanloc', opt.bidschanloc,'studyName',dsname,'outputdir', outputDir, 'subjects', subjects, 'ctffunc', ctffunc);
+        [STUDY, ALLEEG, ~, stats] = pop_importbids(filepath, 'bidsevent', opt.bidsevent,'bidschanloc', opt.bidschanloc,'studyName',dsname,'outputdir', outputDir, 'subjects', subjects, 'ctffunc', ctffunc, 'metadata', opt.metadata);
         % save stats in code/nemar.json
     else
         tic
