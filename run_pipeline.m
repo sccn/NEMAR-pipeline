@@ -4,6 +4,7 @@ function run_pipeline(dsnumber, varargin)
     pipelineroot = fullfile(eeglabroot, 'plugins', 'NEMAR-pipeline');
     sbatch_logpath = '/expanse/projects/nemar/openneuro/processed/logs';
     nemar_json_backup_path = '/expanse/projects/nemar/openneuro/processed/nemar_json_backup';
+    addpath(pipelineroot);
     addpath(fullfile(pipelineroot,'JSONio'));
     if isempty(which('finputcheck'))
         addpath(eeglabroot);
@@ -126,7 +127,12 @@ function run_pipeline(dsnumber, varargin)
     end
     
     diary(log_file);
+    
     fprintf('Pipeline run on %s\n', string(datetime('today')));
+
+    % check for custom code of this dataset
+    check_dataset_custom_code(dsnumber);
+    
     % set up pipeline sequence
     pipeline = opt.preprocess_pipeline;
     
@@ -206,11 +212,16 @@ function run_pipeline(dsnumber, varargin)
         % wait for all jobs to finish
         finished = false;
         while ~finished
-            fprintf('%s - Checking job status\n', string(datetime('today')));
+            fprintf('Checking job status in PST timezone\n');
+            datetime('now','TimeZone','America/Los_Angeles', 'Format','d-MMM-y HH:mm:ss Z')
             finished = true;
             for j=1:numel(job_ids)
-                job = job_ids{j};
-                [status, result] = system(sprintf('squeue --job %d', job))
+                if isnumeric(job_ids)
+                    job = job_ids(j);
+                else
+                    job = str2num(job_ids{j});
+                end
+                [status, result] = system(sprintf('squeue --job %d', job));
                 if status == 0
                     finished = false;
                     break;
