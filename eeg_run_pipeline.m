@@ -3,6 +3,10 @@ function eeg_run_pipeline(dsnumber, filepath, varargin)
     eeglabroot = '/expanse/projects/nemar/eeglab';
     pipelineroot = fullfile(eeglabroot,'plugins', 'NEMAR-pipeline');
     addpath(fullfile(pipelineroot,'JSONio'));
+
+    % add path to custom code if exists
+    check_dataset_custom_code(dsnumber);
+
     if isempty(which('finputcheck'))
         addpath(eeglabroot);
         eeglab nogui;

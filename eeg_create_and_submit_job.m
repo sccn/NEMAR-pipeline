@@ -22,7 +22,8 @@ function jobid = eeg_create_and_submit_job(dsnumber, filepath, memory, varargin)
 
     fprintf(fid,"cd /home/dtyoung/NEMAR-pipeline\n");
     fprintf(fid,"module load matlab/2022b\n");
-    fprintf(fid,'matlab -nodisplay -r "eeg_run_pipeline(''%s'', ''%s''', dsnumber, filepath);
+    fprintf(fid,['matlab -nodisplay -r "check_dataset_custom_code(''%s''); which(''eeg_run_pipeline'');' ...
+        ' eeg_run_pipeline(''%s'', ''%s'''], dsnumber, dsnumber, filepath);
 
     % add optional arguments
     if length(varargin) == 0
