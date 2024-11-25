@@ -14,7 +14,7 @@ function eeg_run_pipeline(dsnumber, filepath, varargin)
         'resave'                  'boolean'   {}                      true; ...
         'modeval'                 'string'    {'new', 'resume', 'rerun'}       'resume'; ...                                                      % if new mode, pipeline will overwrite existing outputdir. resume won't 
         'preprocess'              'boolean'   {}                      true; ...
-        'preprocess_pipeline'     'cell'      {}                      {'check_import', 'check_chanloc', 'remove_chan', 'cleanraw', 'avg_ref', 'runica', 'iclabel'}; ...  % preprocessing steps
+        'preprocess_pipeline'     'cell'      {}                      {'check_import', 'check_chanloc', 'cleanraw', 'avg_ref', 'runica', 'iclabel'}; ...  % preprocessing steps
         'plugin'                  'boolean'   {}                      true; ...
         'plugin_specific'          'cell'      {}                      {}; ...                     % plugins to specifically run
         'dataqual'                'boolean'   {}                      true; ...
@@ -35,7 +35,7 @@ function eeg_run_pipeline(dsnumber, filepath, varargin)
     end
 
     % load data run
-    EEG = pop_loadset(filepath);
+    EEG = pop_loadset(filepath)
     [~, filename, ext] = fileparts(EEG.filename);
     
     eeg_logdir = fullfile(opt.logdir, 'eeg_logs');
@@ -63,7 +63,7 @@ function eeg_run_pipeline(dsnumber, filepath, varargin)
     
     % data quality
     if opt.dataqual
-        eeg_nemar_dataqual(EEG, 'logdir', eeg_logdir, 'legacy', opt.legacy);
+        [EEG, ~] = eeg_nemar_dataqual(EEG, 'logdir', eeg_logdir, 'legacy', opt.legacy);
     end
     
     % plugins (including visualization)
@@ -71,6 +71,16 @@ function eeg_run_pipeline(dsnumber, filepath, varargin)
         EEG = eeg_nemar_plugin(EEG, 'logdir', eeg_logdir, 'specific', opt.plugin_specific);
     end
     
+    % save status of pipeline
+    if opt.resave
+        pop_saveset(EEG, 'filepath', EEG.filepath, 'filename', EEG.filename, 'savemode', 'onefile');
+    end
+    status_file = fullfile(eeg_logdir, [filename '_status_all.csv']);
+    if exist(status_file, 'file')
+        delete(status_file)
+    end
+    writetable(EEG.etc.nemar_pipeline_status, status_file);
+
     disp('Finished running pipeline on EEG.');
     diary off
     end

@@ -14,3 +14,7 @@ web/nemar_access_token
 web/nemar-json-spreadsheet/token.json
 web/nemar-json-spreadsheet/__pycache__/
 web/nemarapi/__pycache__/
+web/__pycache__/
+memory-sweep/
+HED/.python-version
+pyvenv.cfg

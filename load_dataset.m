@@ -8,6 +8,7 @@ function [STUDY, ALLEEG, dsname] = load_dataset(filepath, outputDir, modeval, su
         'bidsevent'    'string'  {}    'on';
         'bidschanloc'      'string'  {}    'on';
         'metadata'      'string' {}    'off';}, 'load_dataset');
+    opt
     if isstr(opt), error(opt); end
 
     modeval
@@ -29,7 +30,4 @@ function [STUDY, ALLEEG, dsname] = load_dataset(filepath, outputDir, modeval, su
     else
         tic
         [STUDY, ALLEEG] = pop_loadstudy(studyFile);
-    end
-    if any([ ALLEEG.trials ] > 1)
-        disp('Cannot process data epochs');
     end

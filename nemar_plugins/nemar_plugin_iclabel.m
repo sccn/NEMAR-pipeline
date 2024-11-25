@@ -23,6 +23,7 @@ function [status, templateFields] = nemar_plugin_iclabel(EEG, modality)
             counter = counter + 1;
         end
             
+        fontname(gcf, 'Arial');
         print(gcf,'-dsvg','-noui',fullfile(outpath,[ result_basename '_icamaps.svg' ])) % not having -noui gave error
         % Printing of uicontrols is not supported on this platform.'
         close

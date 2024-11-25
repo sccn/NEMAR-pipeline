@@ -44,11 +44,12 @@ hed_summary_model_path = './hed_summary_cmd.json'
 outputdir = '/expanse/projects/nemar/openneuro/processed/event_summaries'
 start = False
 error_logfile = './run_hed_summary.err'
+logdir = './logs'
 fid_err = open(error_logfile, 'w')
 run_wordcloud = True
 
 # TODO: use NEMAR database
-dsnumbers = ['ds004855', 'ds004854', 'ds004853', 'ds004852', 'ds004851', 'ds004850', 'ds004849', 'ds004844', 'ds004843', 'ds004842', 'ds004841', 'ds004661', 'ds004660', 'ds004657', 'ds004362', 'ds004350', 'ds004123', 'ds004122', 'ds004121', 'ds004120', 'ds004119', 'ds004118', 'ds004117', 'ds004106', 'ds004105', 'ds003645', 'ds003061', 'ds002893', 'ds002691', 'ds002680', 'ds002578']
+dsnumbers = ['ds003645'] # ['ds004855', 'ds004854', 'ds004853', 'ds004852', 'ds004851', 'ds004850', 'ds004849', 'ds004844', 'ds004843', 'ds004842', 'ds004841', 'ds004661', 'ds004660', 'ds004657', 'ds004362', 'ds004350', 'ds004123', 'ds004122', 'ds004121', 'ds004120', 'ds004119', 'ds004118', 'ds004117', 'ds004106', 'ds004105', 'ds003645', 'ds003061', 'ds002893', 'ds002691', 'ds002680', 'ds002578']
 for f in dsnumbers:
     print(f'processing {f}')
     try:
@@ -58,7 +59,8 @@ for f in dsnumbers:
             os.mkdir(work_dir)
         if os.path.isdir(data_root):
             arg_list = [data_root, hed_summary_model_path, '-nb', '-nu',  '-x', 'stimuli',
-                'derivatives', 'code', 'stimuli', 'sourcedata', '.datalad', '-nb', '-w', work_dir, '-b', '-i', 'none', '-v']
+                'derivatives', 'code', 'stimuli', 'sourcedata', '.datalad', '-nb', '-w', work_dir,
+                '-ld', logdir, '-b', '-i', 'none', '-v', '-t', 'FacePerception']
             main(arg_list)
             hed_summary_outputdir = os.path.join(work_dir, 'remodel', 'summaries', 'summarize_hed_tags')
             hed_summaries = [file for file in os.listdir(hed_summary_outputdir) if re.match('summarize_hed_tags.json', file)]
@@ -69,6 +71,7 @@ for f in dsnumbers:
                 generate_json_report(hed_summary_outputdir, hed_summary_outputfile, work_dir)
 
     except Exception as e:
+        print(e)
         fid_err.write(f'Error processing {f}: {e}\n')
 
 fid_err.close()

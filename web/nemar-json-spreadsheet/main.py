@@ -13,6 +13,7 @@ def aggregate_nemar_json():
             dsnumber = folder.split('/')[-1]
             dsnumbers.append(dsnumber)
             nemar_json = os.path.join(path, folder, 'code', 'nemar.json')
+            # nemar_json = os.path.join(path, 'nemar_json_temp', f'{dsnumber}_nemar.json')
             if os.path.exists(nemar_json):
                 with open(nemar_json, 'r') as f:
                     nemar_json = json.load(f)

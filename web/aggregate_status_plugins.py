@@ -161,7 +161,7 @@ def append_custom(df, processing):
     return df
     
 def get_processing_ds():
-    result = subprocess.run(["ssh", "dtyoung@login.expanse.sdsc.edu", "squeue -u dtyoung | grep ds00*"], 
+    result = subprocess.run(["ssh", "dtyoung@login.expanse.sdsc.edu", "squeue -u arno,dtyoung,asalazar | grep ds00*"], 
                         shell=False,
                         stdout=subprocess.PIPE,
                         stderr=subprocess.PIPE,

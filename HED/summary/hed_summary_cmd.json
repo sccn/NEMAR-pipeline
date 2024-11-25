@@ -18,7 +18,7 @@
           "include_context": true,
           "replace_defs": true,
           "remove_types": ["Condition-variable", "Task"],
-          "word_cloud": {"use_mask": true, "max_font_size": 20, "min_font_size":15, "height": 350, "width":450, 
-                         "prefer_horizontal": 0.75, "scale_adjustment": 5}
+          "word_cloud": {"use_mask": true, "contour_width": 1, "max_font_size": 18, "min_font_size":13, "height": 400, "width":600, 
+                         "prefer_horizontal": 0.75, "scale_adjustment": 5, "set_font":true, "font_path": "./arial.ttf"} 
       }
  }]

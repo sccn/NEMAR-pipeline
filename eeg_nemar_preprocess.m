@@ -12,7 +12,7 @@
 % To do: ignore non-EEG channel types instead of removing them
 
 function [EEG, status] = eeg_nemar_preprocess(EEG, varargin)
-    pipeline_all = {'check_import', 'check_chanloc', 'remove_chan', 'cleanraw', 'runica', 'iclabel'};
+    pipeline_all = {'check_import', 'check_chanloc', 'channelsystem', 'cleanraw', 'runica', 'iclabel'};
     opt = finputcheck(varargin, { ...
         'pipeline'       'cell'      {}                      pipeline_all; ...  % preprocessing steps
         'logdir'         'string'    {}                      './eeg_nemar_logs'; ...
@@ -49,7 +49,7 @@ function [EEG, status] = eeg_nemar_preprocess(EEG, varargin)
 
     status_file = fullfile(opt.logdir, [filename '_preprocess.csv']);
     % if status_file exists, read it
-    if exist(status_file, 'file') && strcmp(opt.modeval, "resume")
+    if exist(status_file, 'file') && (strcmp(opt.modeval, "resume") || strcmp(opt.modeval, "rerun"))
         status_tbl = readtable(status_file);
     else
         status_tbl = array2table(zeros(1, numel(pipeline_all)));
@@ -68,6 +68,10 @@ function [EEG, status] = eeg_nemar_preprocess(EEG, varargin)
             disp(fullfile(EEG.filepath, EEG.filename))
             operation = opt.pipeline{i};
             if strcmp(operation, "check_import")
+                % if check_import is not a field in status_tbl
+                if ~isfield(status_tbl, 'check_import')
+                    status_tbl.check_import = status_tbl.remove_chan;
+                end
                 if resume && status_tbl.check_import
                     fprintf('Skipping check_import\n');
                     continue
@@ -77,7 +81,7 @@ function [EEG, status] = eeg_nemar_preprocess(EEG, varargin)
                 end
             end
             if strcmp(operation, "check_chanloc")
-                if resume && status_tbl.check_chanloc
+                if resume && isfield(status_tbl, 'check_chanloc') && status_tbl.check_chanloc
                     fprintf('Skipping check_chanloc\n');
                     continue
                 end
@@ -180,8 +184,18 @@ function [EEG, status] = eeg_nemar_preprocess(EEG, varargin)
 
             % if reached, operation completed without error and result should be saved
             if opt.resave
+                if strcmp(opt.modeval, "new") || ~isfield(EEG.etc, 'nemar_pipeline_status')
+                    EEG.etc.nemar_pipeline_status = status_tbl;
+                end
+                if strcmp(opt.modeval, "rerun") || strcmp(opt.modeval, "resume")
+                    % iterate through fields of status_tbl and add to EEG.etc.nemar_pipeline_status
+                    for j=1:numel(status_tbl.Properties.VariableNames)
+                        field = status_tbl.Properties.VariableNames{j};
+                        EEG.etc.nemar_pipeline_status.(field) = status_tbl.(field);
+                    end
+                end
                 disp('Saving EEG file')
-                pop_saveset(EEG, 'filepath', EEG.filepath, 'filename', EEG.filename);
+                pop_saveset(EEG, 'filepath', EEG.filepath, 'filename', EEG.filename, 'savemode', 'onefile');
             end
             % write status file
             writetable(status_tbl, status_file);
@@ -194,18 +208,3 @@ function [EEG, status] = eeg_nemar_preprocess(EEG, varargin)
     % close log file
     diary off
 end
-
-	    %{
-            if strcmp(operation, "avg_ref")
-                if resume && status_tbl.avg_ref
-                    fprintf('Skipping avg_ref\n');
-                    continue
-                end
-                % recompute average reference interpolating missing channels (and removing
-                % them again after average reference - STUDY functions handle them automatically)
-                options = {[], 'interpchan', []};
-                EEG = pop_reref( EEG,options{:});
-
-                status_tbl.avg_ref = 1;
-            end
-	    %}
