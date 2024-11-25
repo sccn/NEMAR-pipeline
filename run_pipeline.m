@@ -28,6 +28,7 @@ function run_pipeline(dsnumber, varargin)
         'run_local'               'boolean'   {}                      false; ...
         'ctffunc'                 'string'    {}                      'fileio'; ...
         'subjects'                'integer'  []                      []; ... 
+        'mergeset'                'boolean'  []                       false; ... 
         'verbose'                 'boolean'   {}                      true; ...
         }, 'run_pipeline');
     if isstr(opt), error(opt); end
@@ -146,49 +147,105 @@ function run_pipeline(dsnumber, varargin)
             eeg_run_varargin = [eeg_run_varargin varargin(p) varargin(p+1)]
         end
     end
-    % fid = fopen(fullfile(sbatch_logpath, [dsnumber '_jobids.csv']), 'w');
-    subject = ALLEEG(1).subject
-    EEG = pop_loadset('filename',ALLEEG(1).filename, 'filepath',ALLEEG(1).filepath);
-    for i=2:numel(ALLEEG)
-        if ~strcmp(ALLEEG(i).subject, subject)
-            % fclose(fid);
-            % save concatenated dataset
-            filename = regexp(ALLEEG(i-1).filename, 'sub-([a-zA-Z0-9]+)', 'match');
-            filename = [filename{1} '_task-combined_eeg.set'];
-            filepath = ALLEEG(i-1).filepath;
+    if ~opt.run_local
+        fid = fopen(fullfile(sbatch_logpath, [dsnumber '_jobids.csv']), 'w');
+    end
+    if opt.mergeset
+        subject = ALLEEG(1).subject
+        EEG = pop_loadset('filename',ALLEEG(1).filename, 'filepath',ALLEEG(1).filepath);
+        for i=2:numel(ALLEEG)
+            if ~strcmp(ALLEEG(i).subject, subject)
+                % save concatenated dataset
+                filename = regexp(ALLEEG(i-1).filename, 'sub-([a-zA-Z0-9]+)', 'match');
+                filename = [filename{1} '_task-combined_eeg.set'];
+                filepath = ALLEEG(i-1).filepath;
 
-            pop_saveset(EEG, 'filename', filename, 'filepath', filepath);
-            subject = EEG.subject
-            EEG = pop_loadset(ALLEEG(i).filename, ALLEEG(i).filepath)
-            if opt.run_local
-                eeg_run_pipeline(dsnumber, fullfile(filepath, filename), eeg_run_varargin{:});
+                pop_saveset(EEG, 'filename', filename, 'filepath', filepath);
+                subject = EEG.subject
+                EEG = pop_loadset(ALLEEG(i).filename, ALLEEG(i).filepath)
+                if opt.run_local
+                    eeg_run_pipeline(dsnumber, fullfile(filepath, filename), eeg_run_varargin{:});
+                else
+                    jobid = eeg_create_and_submit_job(dsnumber, fullfile(filepath, filename), opt.memory, eeg_run_varargin{:});
+                    fprintf(fid, '%s,%s\n', filepath, jobid);
+                end
+                
             else
-                jobid = eeg_create_and_submit_job(dsnumber, fullfile(filepath, filename), opt.memory, eeg_run_varargin{:});
-                % fprintf(fid, '%s,%s\n', filepath, jobid);
+                EEG = pop_mergeset(EEG, pop_loadset('filename',ALLEEG(i).filename, 'filepath',ALLEEG(i).filepath));
             end
-            
+        end
+
+        % last subject
+        filename = regexp(ALLEEG(i-1).filename, 'sub-([a-zA-Z0-9]+)', 'match');
+        filename = [filename{1} '_task-combined_eeg.set'];
+        filepath = ALLEEG(i-1).filepath;
+
+        EEG = pop_saveset(EEG, 'filename', filename, 'filepath', filepath, 'savemode', 'onefile');
+        if opt.run_local
+            eeg_run_pipeline(dsnumber, fullfile(filepath, filename), eeg_run_varargin{:});
         else
-            EEG = pop_mergeset(EEG, pop_loadset('filename',ALLEEG(i).filename, 'filepath',ALLEEG(i).filepath));
+            jobid = eeg_create_and_submit_job(dsnumber, fullfile(filepath, filename), opt.memory, eeg_run_varargin{:});
+            fprintf(fid, '%s,%s\n', filepath, jobid);
+        end
+    else
+        for i=1:numel(ALLEEG)
+            if opt.run_local
+                eeg_run_pipeline(dsnumber, fullfile(ALLEEG(i).filepath, ALLEEG(i).filename), eeg_run_varargin{:});
+            else
+                jobid = eeg_create_and_submit_job(dsnumber, fullfile(ALLEEG(i).filepath, ALLEEG(i).filename), opt.memory, eeg_run_varargin{:});
+                fprintf(fid, '%s,%s\n', ALLEEG(i).filepath, jobid);
+            end
         end
     end
+    fclose(fid);
 
-    % last subject
-    filename = regexp(ALLEEG(i-1).filename, 'sub-([a-zA-Z0-9]+)', 'match');
-    filename = [filename{1} '_task-combined_eeg.set'];
-    filepath = ALLEEG(i-1).filepath;
+    if ~opt.run_local
+        job_ids = readtable(fullfile(sbatch_logpath, [dsnumber '_jobids.csv']), 'Delimiter', 'comma');
+        % get job ids from the second column
+        job_ids = job_ids{:,2};
+        % wait for all jobs to finish
+        finished = false;
+        while ~finished
+            fprintf('%s - Checking job status\n', string(datetime('today')));
+            finished = true;
+            for j=1:numel(job_ids)
+                job = job_ids{j};
+                [status, result] = system(sprintf('squeue --job %d', job))
+                if status == 0
+                    finished = false;
+                    break;
+                end
+            end
+            if ~finished
+                pause(600); % wait for 10 minutes before checking again
+            end
+        end
+    end % if running on slurm and reach here, all processing jobs should have finished already
 
-    EEG = pop_saveset(EEG, 'filename', filename, 'filepath', filepath, 'savemode', 'onefile');
-    if opt.run_local
-        eeg_run_pipeline(dsnumber, fullfile(filepath, filename), eeg_run_varargin{:});
-    else
-        jobid = eeg_create_and_submit_job(dsnumber, fullfile(filepath, filename), opt.memory, eeg_run_varargin{:});
-        % fprintf(fid, '%s,%s\n', filepath, jobid);
+    % run dataset-level report after all individual recording processing finish
+    if opt.dataqual
+        fprintf('Running data quality check\n');
+        nemar_dataqual(dsnumber, STUDY, ALLEEG);
     end
-    % fclose(fid);
-    % if opt.dataqual
-    %     fprintf('Running data quality check\n');
-    %     nemar_dataqual(dsnumber, STUDY, ALLEEG);
-    % end
+    eeg_logdir = fullfile(opt.logdir, 'eeg_logs');
+    study_status_tbl = [];
+    for i=1:numel(ALLEEG)
+        filename = ALLEEG(i).filename;
+        [~, filename, ext] = fileparts(filename);
+        eeg_status_file = fullfile(eeg_logdir, [filename '_status_all.csv']);
+        if exist(status_file, 'file')
+            eeg_status_tbl = readtable(eeg_status_file);
+            if isempty(study_status_tbl)
+                study_status_tbl = eeg_status_tbl;
+            else
+                study_status_tbl = outerjoin(study_status_tbl,eeg_status_tbl,'MergeKeys',true);
+            end
+        end
+    end
+    STUDY.etc.nemar_pipeline_status = study_status_tbl;
+    study_status_file = fullfile(opt.logdir, 'ind_pipeline_status_all.csv');
+    writetable(study_status_tbl, study_status_file);
+
     diary off
     end
     

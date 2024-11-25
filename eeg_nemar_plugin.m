@@ -11,6 +11,7 @@ function EEG = eeg_nemar_plugin(EEG, varargin)
         'specific'       'cell'      {}      {}; ...                     % plugins to specifically run
         'modeval'        'string'    {'new', 'resume', 'rerun'}    'resume'; ...                                                      % if import mode, pipeline will overwrite existing outputdir. rerun won't 
         'logdir'         'string'    {}      './eeg_nemar_logs'; ...
+        'resave'         'boolean'   {}                      true; ...
     }, 'eeg_nemar_plugin');
     if isstr(opt), error(opt); end
     if ~exist(opt.logdir, 'dir')
@@ -48,13 +49,28 @@ function EEG = eeg_nemar_plugin(EEG, varargin)
     splitted = split(EEG.filename(1:end-4), '_');
     modality = splitted{end};
     status = zeros(1,numel(plugins));
+
+    status_file = fullfile(opt.logdir, [EEG.filename(1:end-4) '_plugins.csv']);
+    if exist(status_file, 'file') 
+        status_tbl = readtable(status_file);
+    else
+        status_tbl = array2table(zeros(1, numel(plugins)));
+        status_tbl.Properties.VariableNames = plugins;
+    end
+    disp(status_tbl)
+
     for i=1:numel(plugins)
+        plugin = plugins{i};
         fcn = ['nemar_plugin_' plugins{i}];
         if ~isempty(opt.specific) && ~any(strcmp(opt.specific, plugins{i}))
             continue
         end
+        if strcmp(opt.modeval, 'resume') && isfield(status_tbl, plugin) && status_tbl.(plugin) == 1
+            continue
+        end
         try
             [finished, templateFields] = feval(fcn, EEG, modality);
+            status_tbl.(plugin) = finished;
             status(i) = finished;
         catch ME
             fprintf('Error running plugin %s\n', plugins{i});
@@ -63,28 +79,45 @@ function EEG = eeg_nemar_plugin(EEG, varargin)
         end
     end
 
-    % log results
-    status_file = fullfile(opt.logdir, [EEG.filename(1:end-4) '_plugins.csv']);
-    if exist(status_file, 'file') && ~isempty(opt.specific)
-        disp('status exist')
-        status
-        status_tbl = readtable(status_file);
-        for p=1:numel(plugins)
-            plugin = plugins{p}
-            if any(strcmp(opt.specific, plugin))
-                plugin
-                status(p)
-                status_tbl.(plugin) = status(p);
-            end
-        end
-    else
-        status_tbl = array2table(zeros(1, numel(plugins)));
-        status_tbl.Properties.VariableNames = plugins;
-        for p=1:numel(plugins)
-            plugin = plugins{p};
-            status_tbl.(plugin) = status(p);
-        end
-    end
-    disp(status_tbl)
+    % % log results
+    % status_file = fullfile(opt.logdir, [EEG.filename(1:end-4) '_plugins.csv']);
+    % if exist(status_file, 'file') && strcmp(opt.modeval, 'resume')
+    %     disp('status exist')
+    %     status
+    %     status_tbl = readtable(status_file);
+    %     for p=1:numel(plugins)
+    %         plugin = plugins{p}
+    %         if ~isempty(opt.specific)
+    %             if any(strcmp(opt.specific, plugin))
+    %                 if strcmp(opt.modeval, 'resume') && isfield(status_tbl, plugin)
+    %                 plugin
+    %                 status(p)
+    %                 status_tbl.(plugin) = status(p);
+    %             end
+    %         else
+
+    %         end
+    %     end
+    % else
+    %     status_tbl = array2table(zeros(1, numel(plugins)));
+    %     status_tbl.Properties.VariableNames = plugins;
+    %     for p=1:numel(plugins)
+    %         plugin = plugins{p};
+    %         status_tbl.(plugin) = status(p);
+    %     end
+    % end
+    % disp(status_tbl)
     writetable(status_tbl, status_file);
+    if opt.resave
+        disp('Saving EEG file')
+        if isfield(EEG.etc, 'nemar_pipeline_status')
+            for j=1:numel(status_tbl.Properties.VariableNames)
+                field = status_tbl.Properties.VariableNames{j};
+                EEG.etc.nemar_pipeline_status.(field) = status_tbl.(field);
+            end
+        else
+            EEG.etc.nemar_pipeline_status = status_tbl;
+        end
+        pop_saveset(EEG, 'filepath', EEG.filepath, 'filename', EEG.filename, 'savemode', 'onefile');
+    end
 end

@@ -21,6 +21,11 @@ try:
 except OSError:
     logfile = sys.stdout
 
+def ignore_nonexistent_ds(df):
+    raw_ds = [f for f in os.listdir(raw_dir) if f.startswith('ds') and os.path.isdir(f'{raw_dir}/{f}')]
+    df = df[df['dsnumber'].isin(raw_ds)]
+    return df
+
 def get_known_errors(matlab_log, batcherr_log):
     errors = ""
     with open(matlab_log, 'r') as file:
@@ -39,7 +44,7 @@ def get_known_errors(matlab_log, batcherr_log):
     
     return errors
 
-def write_nemar_json(df, is_processed, latest_date):
+def write_nemar_json(df, is_processed, latest_date, processed_dir=processed_dir):
     note = ""
     path = os.path.join(processed_dir, df['dsnumber'][0]) 
     code_dir = path + '/code'
@@ -104,22 +109,25 @@ def append_modality(df):
 
         return df
 
-def get_latest_date(df) -> str:
-    # sbatch_log_dir = os.path.join(processed_dir, 'logs', df['dsnumber'][0])
-    status_file = os.path.join(processed_dir, df['dsnumber'][0], 'logs', 'pipeline_status.csv')
+def get_latest_date(df, processed_dir=processed_dir) -> str:
+    sbatch_log_dir = os.path.join(processed_dir, 'logs', df['dsnumber'][0])
+    logfile_new = os.path.join(processed_dir, 'logs', df['dsnumber'][0], df['dsnumber'][0] + '.out')
+    logfile_old = os.path.join(processed_dir, 'logs', df['dsnumber'][0], df['dsnumber'][0] + '.out')
 
-    if os.path.exists(status_file): #(sbatch_log_dir): # and os.path.exists(logfile):
-        # dates = [datetime.datetime.fromtimestamp(os.path.getmtime(os.path.join(root, file)))
-                            # for root, _, files in os.walk(sbatch_log_dir) for file in files]
-        # latest_date = max(dates) if len(dates) > 0 else datetime.datetime.fromtimestamp(os.path.getmtime(logfile))
-        latest_date = datetime.datetime.fromtimestamp(os.path.getmtime(status_file))
-
-        latest_sbatch = latest_date.strftime("%m-%d-%Y")
+    if os.path.exists(logfile_new):
+        latest_date = datetime.datetime.fromtimestamp(os.path.getmtime(logfile_new)).strftime("%m-%d-%Y")
+    elif os.path.exists(logfile_old):
+        latest_date = datetime.datetime.fromtimestamp(os.path.getmtime(logfile_old)).strftime("%m-%d-%Y")
+    elif os.path.exists(sbatch_log_dir) and os.listdir(sbatch_log_dir):
+        dates = [datetime.datetime.fromtimestamp(os.path.getmtime(os.path.join(root, file)))
+                            for root, _, files in os.walk(sbatch_log_dir) for file in files]
+        latest_date = max(dates).strftime("%m-%d-%Y")
+        # latest_sbatch = latest_date.strftime("%m-%d-%Y")
     else:
-        latest_sbatch = "N/A"
-    return latest_sbatch
+        latest_date = "N/A"
+    return latest_date
 
-def append_debug(df, processing):
+def append_debug(df, processing, processed_dir=processed_dir):
     '''
     Append debug note to dataframe
     '''
@@ -212,14 +220,14 @@ def reformat_cell(df):
                 df.at[0,columnName] = reformatted
     return df
 
-def append_custom(df, processing):
+def append_custom(df, processing, processed_dir=processed_dir):
     '''
     Append custom columns to dataframe
     '''
     if len(df) > 1:
         raise ValueError('More than one dataset being processed')
     df = append_modality(df)
-    df = append_debug(df, processing)
+    df = append_debug(df, processing, processed_dir=processed_dir)
     latest_sbatch = get_latest_date(df)
     # write nemar.json with processed status based on value of notes
     note = write_nemar_json(df, is_processed=check_status(df), latest_date=latest_sbatch)
@@ -240,7 +248,7 @@ def get_processing_ds():
     matches = re.findall(pattern, result)
     return matches
     
-def aggregate_ind_status(dsnumber):
+def aggregate_ind_status(dsnumber, processed_dir=processed_dir):
     log_dir = os.path.join(processed_dir, dsnumber, 'logs', 'eeg_logs')
     frames = []
     # so we also append the viz and dataqual columns to the ind df
@@ -311,7 +319,7 @@ def aggregate_ind_status(dsnumber):
     return final_status_df
 
 
-def get_pipeline_status(dsnumbers):
+def get_pipeline_status(dsnumbers, processed_dir=processed_dir):
     processing = get_processing_ds()
     processing = list(set([ds.decode('utf-8') for ds in processing]))
     if dsnumbers:
@@ -352,6 +360,7 @@ def get_pipeline_status(dsnumbers):
                         df = pd.read_csv(status_file)
                         df = append_custom(df, processing)
                         df = reformat_cell(df)
+
                         frames.append(df)
 
         all_status = pd.concat(frames)
@@ -363,6 +372,10 @@ def get_pipeline_status(dsnumbers):
     # move check_import to front
     first_column = all_status.pop('check_import') 
     all_status.insert(1, 'check_import', first_column) 
+
+    # remove dataset that no longer in openneuro source folder
+    all_status = ignore_nonexistent_ds(all_status)
+
     return all_status
 
 if __name__ == "__main__":
@@ -380,6 +393,10 @@ if __name__ == "__main__":
 
     with open(final_file, 'w') as out:
         final_df.to_csv(out, index=False)
+
+        with open('pipeline_status_all.csv', 'w') as out2:
+            final_df.to_csv(out2, index=False)
+
         logfile.write('writing csv\n')
 
     with open(final_file_html, 'w') as out:

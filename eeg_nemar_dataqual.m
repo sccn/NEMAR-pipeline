@@ -1,4 +1,4 @@
-function cur_report = eeg_nemar_dataqual(EEG, varargin)
+function [EEG, cur_report] = eeg_nemar_dataqual(EEG, varargin)
     import java.text.* % for json formatting
     metrics_all = {'dataqual'}; % for now. In future it would be broken down, e.g. {'dataP', 'chanP', 'icaP'};
     opt = finputcheck(varargin, { ...
@@ -6,6 +6,7 @@ function cur_report = eeg_nemar_dataqual(EEG, varargin)
         'outputdir'      'string'    {}                      EEG.filepath; ...   
         'logdir'         'string'    {}                      './eeg_nemar_logs'; ...
         'legacy'         'boolean'   {}                      false; ...
+        'resave'         'boolean'   {}                      true; ...
     }, 'generate_report');
     if isstr(opt), error(opt); end
     if ~exist(opt.outputdir, 'dir')
@@ -127,6 +128,15 @@ function cur_report = eeg_nemar_dataqual(EEG, varargin)
         % if reached, operation completed without error
         % write status file
         status_tbl.dataqual = 1; % for now, later add more metrics
+        if opt.resave
+            disp('Saving EEG file')
+            if isfield(EEG.etc, 'nemar_pipeline_status')
+                EEG.etc.nemar_pipeline_status.dataqual = 1;
+            else
+                EEG.etc.nemar_pipeline_status = status_tbl;
+            end
+            pop_saveset(EEG, 'filepath', EEG.filepath, 'filename', EEG.filename, 'savemode', 'onefile');
+        end
         writetable(status_tbl, status_file);
         disp(status_tbl)
     catch ME

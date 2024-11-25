@@ -1,0 +1,11 @@
+[
+    {
+       "operation": "summarize_hed_validation",
+       "description": "Validate the events valies",
+       "parameters": {
+           "summary_name": "summarize_hed_validation",
+           "summary_filename": "summarize_hed_validation",
+           "check_for_warnings": true
+         }
+    }
+]

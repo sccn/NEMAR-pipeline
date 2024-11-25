@@ -1,0 +1,41 @@
+[
+    {
+       "operation": "summarize_hed_validation",
+       "description": "Validate the events valies",
+       "parameters": {
+           "summary_name": "summarize_hed_validation",
+           "summary_filename": "summarize_hed_validation"
+         }
+    },
+    {
+       "operation": "summarize_column_values",
+       "description": "Summarize the values in the specified columns.",
+       "parameters": {
+           "summary_name": "summarize_column_values",
+           "summary_filename": "summarize_column_values",
+           "skip_columns": ["onset", "duration", "sample"],
+           "value_columns": ["stim_file", "response_time"]
+         }
+    },
+    {
+       "operation": "summarize_hed_tags",
+       "description": "Summarize the HED tags in the dataset.",
+       "parameters": {
+           "summary_name": "summarize_hed_tags",
+           "summary_filename": "summarize_hed_tags",
+           "tags": {
+               "Sensory events": ["Sensory-event", "Sensory-presentation", "Sensory-attribute",
+                                  "Experimental-stimulus", "Task-stimulus-role", 
+                                  "Task-attentional-demand", "Incidental", "Instructional", "Warning"],
+               "Agent actions": ["Agent-action", "Agent", "Action", "Agent-task-role",
+                                 "Task-action-type", "Participant-response"],
+               "Objects": ["Item"],
+               "Other events": ["Event", "Task-event-role", "Mishap"],
+               "Exclude tags": ["Def", "Definition", "Event-context", "Def-expand", "Label", "Description"] 
+             },
+             "include_context": true,
+             "replace_defs": true,
+             "remove_types": ["Condition-variable", "Task"]
+         }
+    }
+    ]

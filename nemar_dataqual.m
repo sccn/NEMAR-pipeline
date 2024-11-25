@@ -1,5 +1,10 @@
-function [STUDY, ALLEEG] = nemar_dataqual(dsnumber, STUDY, ALLEEG)
-    outpath = sprintf('/expanse/projects/nemar/openneuro/processed/%s', dsnumber);
+function [STUDY, ALLEEG, error_code] = nemar_dataqual(dsnumber, STUDY, ALLEEG, outpath, participants_tsv)
+    if nargin < 4
+        outpath = sprintf('/expanse/projects/nemar/openneuro/processed/%s', dsnumber);
+    end
+    if nargin < 5
+        participant_tsv = sprintf('/expanse/projects/nemar/openneuro/%s/participants.tsv', dsnumber);
+    end
     eeglabroot = '/expanse/projects/nemar/eeglab';
     pipelineroot = fullfile(eeglabroot, 'plugins', 'NEMAR-pipeline');
     addpath(fullfile(pipelineroot,'JSONio'));
@@ -18,7 +23,7 @@ function [STUDY, ALLEEG] = nemar_dataqual(dsnumber, STUDY, ALLEEG)
     goodICAPercentRaw = [];
     linenoise_magn = [];
     check_chanlocs = [];
-
+    error_code = 0;
     maxCount = 0;
     for i=1:numel(ALLEEG)
         EEG = ALLEEG(i);
@@ -132,7 +137,10 @@ function [STUDY, ALLEEG] = nemar_dataqual(dsnumber, STUDY, ALLEEG)
         yyaxis right
         b = bar(edges(1:end-1), counts, 'BarWidth', 0.8, 'FaceColor', 'flat');%[0.4660 0.6740 0.1880]);
         colorsIdx = round(linspace(1,size(halfJet,1),numel(counts)));
-        colorscheme = halfJet(colorsIdx, :) % interp1([0;1],[colorBad; colorGood],round(linspace(1,numel(halfJet),numel(bins))));
+        colorscheme = halfJet(colorsIdx, :); % interp1([0;1],[colorBad; colorGood],round(linspace(1,numel(halfJet),numel(bins))));
+        colorscheme = colorscheme*0.9;
+        colorscheme(colorscheme>1) = 1
+        colorscheme
         colormap(colorscheme)
         colorbar('Location', 'westoutside', 'Ticks',[0, 1], 'TickLabels', {'Poor', 'Good'});
         % colorscheme = interp1([0;1],[colorBad; colorGood],linspace(0,1,numel(counts)));
@@ -140,7 +148,7 @@ function [STUDY, ALLEEG] = nemar_dataqual(dsnumber, STUDY, ALLEEG)
         xlim([0 100])
         xticks(0:20:100)
         limits = ylim;
-        title('Data frames','FontWeight','Normal');
+        % title('Data frames','FontWeight','Normal');
         xlabel('Data frames retained (%)');
         ylabel(sprintf('Recordings (# of %d)', total_count), 'Color', 'k');
 
@@ -156,9 +164,9 @@ function [STUDY, ALLEEG] = nemar_dataqual(dsnumber, STUDY, ALLEEG)
         colorschemeLinenoise = halfJet(flip(colorsIdxLinenoise), :) % interp1([0;1],[colorBad; colorGood],round(linspace(1,numel(halfJet),numel(bins))));
         colormap(colorschemeLinenoise);
         b.CData = colorschemeLinenoise;
-        title('Line noise','FontWeight','Normal');
+        % title('Line noise','FontWeight','Normal');
         ylabel(sprintf('Recordings (# of %d)', total_count));
-        xlabel('Channel-RMS line noise (dB)');
+        xlabel('Line noise (channel RMS, dB)');
         set(gca, 'fontsize', fontsize);
 
         subplot(3,2,4)
@@ -174,7 +182,7 @@ function [STUDY, ALLEEG] = nemar_dataqual(dsnumber, STUDY, ALLEEG)
         colorbar('Location', 'westoutside', 'Ticks',[0, 1], 'TickLabels', {'Poor', 'Good'});
         b.CData = colorscheme;
         % hist2(chans_above_threshold, chans_below_threshold, bins);
-        title('Data channels','FontWeight','Normal');
+        % title('Data channels','FontWeight','Normal');
         xlabel(sprintf('Data channels retained (%%)\n  '));
         ylabel(sprintf('Recordings (# of %d)', total_count), 'Color', 'k');
         % legend({'Good' 'Problematic' },'Location','northeast');
@@ -189,8 +197,17 @@ function [STUDY, ALLEEG] = nemar_dataqual(dsnumber, STUDY, ALLEEG)
         yticklabels({[]})
         ylabel('');
 
-        subplot(3,2,[5 6])
-        generateParticipantFig(dsnumber)
+        participant_ax = subplot(3,2,[5 6])
+        try
+            generateParticipantFig(dsnumber, participants_tsv) 
+        catch ME
+            warning('Failed to generate participant figure')
+            fprint('Error: %s\n', ME.message)
+            fprint('Stack: %s\n', ME.stack)
+            error_code = 3;
+            pause(3)
+            delete(participant_ax)
+        end
         set(gca, 'fontsize', fontsize);
         print(gcf,'-dsvg','-noui',fullfile(outpath, 'code', [ dsnumber '_histogram.svg' ]))
         print(gcf,'-dpng','-noui',fullfile(outpath, 'code', [ dsnumber '_histogram.png' ]))
@@ -291,32 +308,38 @@ function [STUDY, ALLEEG] = nemar_dataqual(dsnumber, STUDY, ALLEEG)
         % line([xl(1) xl(1)]+(xl(2)-xl(1))/2000, yl, 'color', 'k');
         % line(xl, [yl(1) yl(1)]+(yl(2)-yl(1))/2000, 'color', 'k');
     end
-    function generateParticipantFig(dsnumber)
-        participant_tsv = sprintf('/expanse/projects/nemar/openneuro/%s/participants.tsv', dsnumber);
+    function generateParticipantFig(dsnumber, participant_tsv)
         % read the participants.tsv file
         participant_tbl = readtable(participant_tsv, 'FileType', 'text', 'Delimiter', '\t');
         % get the participant_id column
         participant_id = participant_tbl.participant_id;
         % get the age column
-        if ismember('age', participant_tbl.Properties.VariableNames)
-            age = participant_tbl.age;
-        elseif ismember('AGE', participant_tbl.Properties.VariableNames)
-            age = participant_tbl.AGE;
+        participant_columns = participant_tbl.Properties.VariableNames;
+        participant_columns_lower = lower(participant_columns);
+        if ismember('age', participant_columns_lower)
+            age = participant_tbl.(participant_columns{strcmp(participant_columns_lower, 'age')})
         end
         % get the sex column
-        if ismember('gender', participant_tbl.Properties.VariableNames)
-            gender = participant_tbl.gender;
-        elseif ismember('GENDER', participant_tbl.Properties.VariableNames)
-            gender = participant_tbl.GENDER;
+        if ismember('gender', participant_columns_lower)
+            gender_col = participant_columns(strcmp(participant_columns_lower, 'gender'))
         end
-        age_male = age(strcmp(gender, 'M'));
-        age_female = age(strcmp(gender, 'F'));
+        if ismember('sex', participant_columns_lower)
+            gender_col = participant_columns(strcmp(participant_columns_lower, 'sex'))
+        end
+        gender = lower(participant_tbl.(gender_col{1}));
+        if ismember('m', gender)
+            age_male = age(strcmp(gender, 'm'));
+            age_female = age(strcmp(gender, 'f'));
+        elseif ismember('male', gender)
+            age_male = age(strcmp(gender, 'male'));
+            age_female = age(strcmp(gender, 'female'));
+        end
 
         % create a figure
         gaps = 10;
         age_range = max(age) - min(age);
-        age_range_buffer = round(0.1*age_range);
-        edges = min(age)-age_range_buffer:round(0.1*((max(age)+age_range_buffer)-(min(age)-age_range_buffer))):max(age)+age_range_buffer %round(linspace(min(age)-1, max(age)+1, gaps))
+        age_range_increment = max(1,round(0.1*age_range))
+        edges = min(age)-age_range_increment:age_range_increment:max(age)+age_range_increment %round(linspace(min(age)-1, max(age)+1, gaps))
         [~, edges] = histcounts(age, edges)
         [female_age_counts,~] = histcounts(age_female, edges)
         [male_age_counts,~] = histcounts(age_male, edges)

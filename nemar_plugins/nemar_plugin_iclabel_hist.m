@@ -18,18 +18,25 @@ function [status, templateFields] = nemar_plugin_iclabel_hist(EEG, modality)
         % show also components above 10% (e.g. heart for ds001785)
 
         maxCount = 0;
+        yticklabels_all = cell(7,1);
+        yticks_all = cell(7,1);
+        yticklabels_all_most_count = 0;
+        yticklabels_all_most_count_idx = 0;
         for iClass = 1:7
             subplot(2,4,iClass)
+            % ind: 1 x components, each containing the index of the class that has highest probability for that component
+            % probability doesn't need to be in any range, just need to be highest for that component
+            % Get the indices (from 1-7) of the class with highest likelihood for each component 
             [~,ind] = max(EEG.etc.ic_classification.ICLabel.classifications');
-            indSelect = ind == iClass; % whether iClass is the selected class for the components
-            probs = EEG.etc.ic_classification.ICLabel.classifications;
-            % EEG.etc.ic_classification.ICLabel.classifications - components x classes
-            probSelect1 = probs(indSelect, iClass)*100; % labeled components
-            probSelect2 = probs(~indSelect, iClass)*100; % unlabeled components
+            indSelect = ind == iClass; % whether iClass is the class with highest prob for the component
+            probs = EEG.etc.ic_classification.ICLabel.classifications; % - components x classes
+            probSelect1 = probs(indSelect, iClass)*100; % components for which current class iClass have highest likelihood
+            probSelect2 = probs(~indSelect, iClass)*100; % components for which current class iClass doesn't have highest likelihood
 
             % adding up counts (should then use bar instead of hist)
             virtual_one = 0.1;
-            prob1c = histcounts(probSelect1, 0:10:100);
+            [prob1c, prob1c_edges] = histcounts(probSelect1, 0:10:100);
+            prob1c_edges = prob1c_edges(1:end-1);
             prob1c_raw = prob1c;
             prob1clog = log10(prob1c);
             prob1clog(prob1clog == 0) = virtual_one; % log(0) = -Inf, set to 0 (log(1) = 0
@@ -38,89 +45,88 @@ function [status, templateFields] = nemar_plugin_iclabel_hist(EEG, modality)
             prob2clog = log10(prob2c);
             prob2clog(prob2clog == 0) = virtual_one; % log(0) = -Inf, set to 0 (log(1) = 0
             % bar(5:10:95, prob1c, 'facecolor', [0.4660 0.6740 0.1880], 'facealpha', 0.5)
-            bar(5:10:95, prob1clog, 'facecolor', [0.4660 0.6740 0.1880], 'facealpha', 0.5)
+            prob1clogGray = prob1clog;
+            prob1clogGood = prob1clog;
+            prob1clogGray(prob1c_edges >= 80) = 0;
+            prob1clogGood(prob1c_edges < 80) = 0;
+            bar(5:10:95, prob1clogGray, 'facecolor', [0.9290 0.6940 0.1250], 'facealpha', 0.8);
+            hold on;
+            bar(5:10:95, prob1clogGood, 'facecolor', [0.4660 0.6740 0.1880], 'facealpha', 0.8);
             hold on;
             % bar(5:10:95, prob2c, 'facecolor', [0.8 0.38 0.33]       , 'facealpha', 0.5)
-            bar(5:10:95, prob2clog, 'facecolor', [0.8 0.38 0.33]       , 'facealpha', 0.5)
+            bar(5:10:95, prob2clog, 'facecolor', [0.8 0.38 0.33]       , 'facealpha', 0.8)
             set(gca, 'fontname', 'arial');
             set(gca, 'fontsize', 10);
             xlim([0 100])
-            xticks(0:10:100)
+            xticks(0:20:100)
             yticks_logs = yticks;
             if ~any(virtual_one == yticks_logs)
                 yticks_logs = [yticks_logs(1) virtual_one yticks_logs(2:end)];
             end
             yticks(yticks_logs);
             yticklabels([' ' strsplit(num2str([1 round(10.^yticks_logs(3:end))]), ' ')])
+            yticks_all{iClass} = yticks;
+            yticklabels_all{iClass} = yticklabels;
+            maxLabel = yticklabels_all{iClass};
+            maxLabel = str2num(maxLabel{end});
+            if yticklabels_all_most_count < maxLabel
+                yticklabels_all_most_count = maxLabel;
+                yticklabels_all_most_count_idx = iClass;
+            end
             title(sprintf('%s (%d of %d)', EEG.etc.ic_classification.ICLabel.classes{iClass}, sum(prob1c_raw), numel(ind))); % subplot title
             if mod(iClass, 4) == 1
-                ylabel('Number of components')
+                ylabel('Number of components');
             else
-                ylabel('')
+                ylabel('');
             end
             
-            xlabel('IC class likelihood (%)')
+            xlabel('IC class likelihood (%)');
             logylim = ylim;
             if maxCount < max(logylim)
                 maxCount = max(logylim);
             end
         end
 
+        ticks = yticks_all{yticklabels_all_most_count_idx};
+        labels = yticklabels_all{yticklabels_all_most_count_idx};
         for iClass = 1:7
             subplot(2,4,iClass)
-            ylim([0 maxCount])
+            ylim([0 maxCount]);
+            yticks(ticks);
+            yticklabels(labels);
         end
-        print(gcf,'-dsvg','-noui',fullfile(outpath,[ result_basename '_icahist.svg' ]))
+
+        categories = 90:-10:50;
+        pvafs = compute_pvaf(EEG, categories);
+        subplot(2,4,8)
+        bar(pvafs, 'BarLayout', 'stacked', 'FaceAlpha', 0.6);
+        title(sprintf('%% Data var accounted for \nin each class (by likelihood)'))
+        xticklabels(EEG.etc.ic_classification.ICLabel.classes)
+        legend(cellfun(@(x) sprintf('%d-%d%%', x+1, x+10), num2cell(categories), 'UniformOutput', false), 'Location', 'best')
+        ylabel('Percent (%)')
+
+        print(gcf,'-dsvg','-noui',fullfile(outpath,[ result_basename '_icahist.svg' ]));
         close
 
         status = 1;
     end
 
-
-    % HIST2 - draw superimposed histograms
-    %
-    % Usage:
-    %   >> hist2(data1, data2, bins);
-    %
-    % Inputs:
-    %   data1   - data to plot first process
-    %   data2   - data to plot second process
-    %
-    % Optional inputs:
-    %   bins    - vector of bin center
-    %
-    % Author: Arnaud Delorme (SCCN, UCSD)
-    function hist2(data1, data2, bins);
-
-        if nargin < 1
-            help hist2;
-            return;
+    %% Compute percent variance accounted for 
+    %  of most likely components of all ICLabel classes
+    function pvafs = compute_pvaf(EEG, categories)
+        pvafs = zeros(7, numel(categories));
+        for iClass=1:7
+            [~,ind] = max(EEG.etc.ic_classification.ICLabel.classifications'); % classes x components
+            for iCat = 1:numel(categories)
+                indSelect = find(ind == iClass & EEG.etc.ic_classification.ICLabel.classifications(:, iClass)' <= (categories(iCat)+10)/100 & EEG.etc.ic_classification.ICLabel.classifications(:, iClass)' > categories(iCat)/100); % whether iClass is the class with highest prob for the component
+                if ~isempty(indSelect)
+                    pvafs(iClass, iCat) = eeg_pvaf(EEG, indSelect, 'plot', 'off');
+                end
+            end
+            % indSelect = find(ind == iClass); % whether iClass is the class with highest prob for the component
+            % if ~isempty(indSelect)
+            %     pvafs(iClass) = eeg_pvaf(EEG, indSelect, 'plot', 'off');
+            % end
         end
-        if nargin < 3
-            bins = linspace(min(min(data1), min(data2)), max(max(data1), max(data2)), 100);
-        elseif length(bins) == 1
-            bins = linspace(min(min(data1), min(data2)), max(max(data1), max(data2)), bins);
-        end
-        
-        hist(data1, bins);
-        hold on; hist(data2, bins);
-        %figure; hist( [ measure{:,5} ], 20);
-        %hold on; hist([ measure{:,2} ], 20);
-        c = get(gca, 'children');
-        set(gca, 'fontname', 'arial');
-        numfaces = size(get(c(1), 'Vertices'),1);
-        set(c(1), 'FaceVertexCData', repmat([1 0 0], [numfaces 1]), 'Cdatamapping', 'direct', 'facealpha', 0.5, 'edgecolor', 'k', 'facecolor', [0.5 0.5 0.5]);
-        numfaces = size(get(c(2), 'Vertices'),1);
-        set(c(2), 'FaceVertexCData', repmat([0 0 1], [numfaces 1]), 'Cdatamapping', 'direct', 'facealpha', 0.5, 'edgecolor', 'k');
-        ylabel('Number of values');
-        xlim([bins(1) bins(end)]);
-        
-        % yl = ylim;
-        % xl = xlim;
-        % line([xl(1) xl(1)]+(xl(2)-xl(1))/2000, yl, 'color', 'k');
-        % line(xl, [yl(1) yl(1)]+(yl(2)-yl(1))/2000, 'color', 'k');
     end
-    
-    
-    
 end
