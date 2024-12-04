@@ -202,8 +202,8 @@ function [STUDY, ALLEEG, error_code] = nemar_dataqual(dsnumber, STUDY, ALLEEG, o
             generateParticipantFig(dsnumber, participants_tsv) 
         catch ME
             warning('Failed to generate participant figure')
-            fprint('Error: %s\n', ME.message)
-            fprint('Stack: %s\n', ME.stack)
+            fprintf('Error: %s\n', ME.message)
+            fprintf('Stack: %s\n', ME.stack)
             error_code = 3;
             pause(3)
             delete(participant_ax)
