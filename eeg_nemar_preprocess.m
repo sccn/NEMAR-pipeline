@@ -51,6 +51,14 @@ function [EEG, status] = eeg_nemar_preprocess(EEG, varargin)
     % if status_file exists, read it
     if exist(status_file, 'file') && (strcmp(opt.modeval, "resume") || strcmp(opt.modeval, "rerun"))
         status_tbl = readtable(status_file);
+        % accommodate legacy setup
+        missing_column = {'remove_chan'};
+        for c=1:numel(missing_column)
+            col = missing_column{c};
+            if ~ismember(col, status_tbl.Properties.VariableNames)
+                status_tbl.(col) = 0;
+            end
+        end
     else
         status_tbl = array2table(zeros(1, numel(pipeline_all)));
         status_tbl.Properties.VariableNames = pipeline_all;
