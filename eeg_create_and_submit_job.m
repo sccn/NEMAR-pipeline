@@ -1,5 +1,4 @@
 function jobid = eeg_create_and_submit_job(dsnumber, filepath, memory, varargin)
-    memory
     path = ['/expanse/projects/nemar/openneuro/processed/logs/' dsnumber];
     if ~exist(path, 'dir')
         mkdir(path);
@@ -19,7 +18,6 @@ function jobid = eeg_create_and_submit_job(dsnumber, filepath, memory, varargin)
     fprintf(fid,"#SBATCH --no-requeue\n");
     fprintf(fid,"#SBATCH --cpus-per-task=8\n");
     fprintf(fid,"#SBATCH --ntasks-per-node=1\n\n");
-
     fprintf(fid,"cd /home/dtyoung/NEMAR-pipeline\n");
     fprintf(fid,"module load matlab/2022b\n");
     fprintf(fid,['matlab -nodisplay -r "check_dataset_custom_code(''%s''); which(''eeg_run_pipeline'');' ...

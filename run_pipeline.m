@@ -199,6 +199,7 @@ function run_pipeline(dsnumber, varargin)
                 eeg_run_pipeline(dsnumber, fullfile(ALLEEG(i).filepath, ALLEEG(i).filename), eeg_run_varargin{:});
             else
                 jobid = eeg_create_and_submit_job(dsnumber, fullfile(ALLEEG(i).filepath, ALLEEG(i).filename), opt.memory, eeg_run_varargin{:});
+                fprintf("Submitted job %s\n", jobid)
                 fprintf(fid, '%s,%s\n', ALLEEG(i).filepath, jobid);
             end
         end
