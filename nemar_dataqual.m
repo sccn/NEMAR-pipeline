@@ -1,4 +1,4 @@
-function [STUDY, ALLEEG] = nemar_dataqual(dsnumber, mergeset, STUDY, ALLEEG, outpath, participants_tsv)
+function [STUDY, ALLEEG] = nemar_dataqual(dsnumber, mergeset, STUDY, ALLEEG, outpath, participant_tsv)
     fprintf('Running nemar_dataqual\n');
     if nargin < 5
         outpath = sprintf('/expanse/projects/nemar/openneuro/processed/%s', dsnumber);
