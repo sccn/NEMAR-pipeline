@@ -19,7 +19,7 @@ function run_pipeline(dsnumber, varargin)
         'modeval'                 'string'    {'new', 'resume', 'rerun'}       'resume'; ...                                                      % if new mode, pipeline will overwrite existing outputdir. resume won't 
         'import_options'          'cell'      {}                      {}; ...
         'preprocess'              'boolean'   {}                      true; ...
-        'preprocess_pipeline'     'cell'      {}                      {'check_import', 'check_chanloc', 'cleanraw', 'runica', 'iclabel'}; ...  % preprocessing steps
+        'preprocess_pipeline'     'cell'      {}                      {'check_import', 'check_chanloc', 'remove_chan', 'channelsystem', 'cleanraw', 'runica', 'iclabel'}; ...  % preprocessing steps
         'plugin'                  'boolean'   {}                      true; ...
         'plugin_specific'         'cell'      {}                      {}; ...               % plugins to specifically run      
         'dataqual'                'boolean'   {}                      true; ...
@@ -48,10 +48,10 @@ function run_pipeline(dsnumber, varargin)
     log_file = fullfile(opt.logdir, 'matlab_log');
     codeDir = fullfile(opt.outputdir, "code");
     
-    if opt.verbose
-        disp('Saving nemar.json file');
-    end
     if exist(codeDir, 'dir') && exist(fullfile(codeDir, 'nemar.json'))
+        if opt.verbose
+            disp('Saving nemar.json file');
+        end
         if ~exist(nemar_json_backup_path, 'dir')
             mkdir(nemar_json_backup_path);
         end
@@ -157,30 +157,26 @@ function run_pipeline(dsnumber, varargin)
             eeg_run_varargin = [eeg_run_varargin varargin(p) varargin(p+1)]
         end
     end
-    if ~opt.run_local
-        fid = fopen(fullfile(sbatch_logpath, [dsnumber '_jobids.csv']), 'w');
-    end
+
     if opt.mergeset
-        subject = ALLEEG(1).subject
+        % assume that subjects in ALLEEG are always sorted
+        subject = ALLEEG(1).subject;
         EEG = pop_loadset('filename',ALLEEG(1).filename, 'filepath',ALLEEG(1).filepath);
         for i=2:numel(ALLEEG)
             if ~strcmp(ALLEEG(i).subject, subject)
-                % save concatenated dataset
+                % found a new subject, save merged dataset and process
                 filename = regexp(ALLEEG(i-1).filename, 'sub-([a-zA-Z0-9]+)', 'match');
                 filename = [filename{1} '_task-combined_eeg.set'];
                 filepath = ALLEEG(i-1).filepath;
 
                 pop_saveset(EEG, 'filename', filename, 'filepath', filepath);
-                subject = EEG.subject
+                process_dataset(dsnumber, fullfile(filepath, filename), sbatch_logpath, opt, eeg_run_varargin);
+
+                % load new subject
                 EEG = pop_loadset(ALLEEG(i).filename, ALLEEG(i).filepath)
-                if opt.run_local
-                    eeg_run_pipeline(dsnumber, fullfile(filepath, filename), eeg_run_varargin{:});
-                else
-                    jobid = eeg_create_and_submit_job(dsnumber, fullfile(filepath, filename), opt.memory, eeg_run_varargin{:});
-                    fprintf(fid, '%s,%s\n', filepath, jobid);
-                end
-                
+                subject = EEG.subject;
             else
+                % same subject detected, add to the merge set
                 EEG = pop_mergeset(EEG, pop_loadset('filename',ALLEEG(i).filename, 'filepath',ALLEEG(i).filepath));
             end
         end
@@ -191,24 +187,12 @@ function run_pipeline(dsnumber, varargin)
         filepath = ALLEEG(i-1).filepath;
 
         EEG = pop_saveset(EEG, 'filename', filename, 'filepath', filepath, 'savemode', 'onefile');
-        if opt.run_local
-            eeg_run_pipeline(dsnumber, fullfile(filepath, filename), eeg_run_varargin{:});
-        else
-            jobid = eeg_create_and_submit_job(dsnumber, fullfile(filepath, filename), opt.memory, eeg_run_varargin{:});
-            fprintf(fid, '%s,%s\n', filepath, jobid);
-        end
+        process_dataset(dsnumber, fullfile(filepath, filename), sbatch_logpath, opt, eeg_run_varargin);
     else
         for i=1:numel(ALLEEG)
-            if opt.run_local
-                eeg_run_pipeline(dsnumber, fullfile(ALLEEG(i).filepath, ALLEEG(i).filename), eeg_run_varargin{:});
-            else
-                jobid = eeg_create_and_submit_job(dsnumber, fullfile(ALLEEG(i).filepath, ALLEEG(i).filename), opt.memory, eeg_run_varargin{:});
-                fprintf("Submitted job %s\n", jobid)
-                fprintf(fid, '%s,%s\n', ALLEEG(i).filepath, jobid);
-            end
+            process_dataset(dsnumber, fullfile(ALLEEG(i).filepath, ALLEEG(i).filename), sbatch_logpath, opt, eeg_run_varargin);
         end
     end
-    fclose(fid);
 
     if ~opt.run_local
         job_ids = readtable(fullfile(sbatch_logpath, [dsnumber '_jobids.csv']), 'Delimiter', 'comma');
@@ -265,3 +249,21 @@ function run_pipeline(dsnumber, varargin)
     diary off
     end
     
+% Helper function to process merged dataset
+function process_dataset(dsnumber, fullpath, sbatch_logpath, opt, eeg_run_varargin)
+    try
+        if opt.run_local
+            eeg_run_pipeline(dsnumber, fullpath, eeg_run_varargin{:});
+        else
+            jobid = eeg_create_and_submit_job(...
+                dsnumber, fullpath, opt.memory, eeg_run_varargin{:} ...
+            );
+            fid = fopen(fullfile(sbatch_logpath, [dsnumber '_jobids.csv']), 'a');
+            fprintf("Submitted job %s\n", jobid)
+            fprintf(fid, '%s,%s\n', fullpath, jobid);
+            fclose(fid);
+        end
+    catch ME
+        fprintf(2, 'Error processing merged dataset: %s\n', ME.message);
+    end
+end

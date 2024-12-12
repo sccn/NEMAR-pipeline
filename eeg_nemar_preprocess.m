@@ -12,7 +12,7 @@
 % To do: ignore non-EEG channel types instead of removing them
 
 function [EEG, status] = eeg_nemar_preprocess(EEG, varargin)
-    pipeline_all = {'check_import', 'check_chanloc', 'channelsystem', 'cleanraw', 'runica', 'iclabel'};
+    pipeline_all = {'check_import', 'check_chanloc', 'remove_chan', 'channelsystem', 'cleanraw', 'runica', 'iclabel'};
     opt = finputcheck(varargin, { ...
         'pipeline'       'cell'      {}                      pipeline_all; ...  % preprocessing steps
         'logdir'         'string'    {}                      './eeg_nemar_logs'; ...
