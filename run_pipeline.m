@@ -60,6 +60,10 @@ function run_pipeline(dsnumber, varargin)
             error('Error backing up nemar.json file');
         end
     end
+
+    if (strcmp(opt.modeval, "resume") || strcmp(opt.modeval, "rerun")) && ~exist(opt.outputdir, 'dir')
+        opt.modeval = "new";
+    end
     if strcmp(opt.modeval, "new")
         % create output directories
         if opt.verbose
