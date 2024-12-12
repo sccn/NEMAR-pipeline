@@ -89,7 +89,7 @@ function run_pipeline(dsnumber, varargin)
         if ~status
             error('Could not create output directory');
         else
-            status = mkdir(codeDir)
+            status = mkdir(codeDir);
             if ~status
                 error('Could not create %s directory', codeDir);
             else
@@ -173,7 +173,7 @@ function run_pipeline(dsnumber, varargin)
                 process_dataset(dsnumber, fullfile(filepath, filename), sbatch_logpath, opt, eeg_run_varargin);
 
                 % load new subject
-                EEG = pop_loadset(ALLEEG(i).filename, ALLEEG(i).filepath)
+                EEG = pop_loadset(ALLEEG(i).filename, ALLEEG(i).filepath);
                 subject = EEG.subject;
             else
                 % same subject detected, add to the merge set

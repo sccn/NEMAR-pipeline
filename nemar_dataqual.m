@@ -1,89 +1,79 @@
-function [STUDY, ALLEEG, error_code] = nemar_dataqual(dsnumber, STUDY, ALLEEG, outpath, participants_tsv)
-    if nargin < 4
+function [STUDY, ALLEEG] = nemar_dataqual(dsnumber, mergeset, STUDY, ALLEEG, outpath, participants_tsv)
+    fprintf('Running nemar_dataqual\n');
+    if nargin < 5
         outpath = sprintf('/expanse/projects/nemar/openneuro/processed/%s', dsnumber);
     end
-    if nargin < 5
+    if nargin < 6
         participant_tsv = sprintf('/expanse/projects/nemar/openneuro/%s/participants.tsv', dsnumber);
     end
     eeglabroot = '/expanse/projects/nemar/eeglab';
     pipelineroot = fullfile(eeglabroot, 'plugins', 'NEMAR-pipeline');
     addpath(fullfile(pipelineroot,'JSONio'));
-    if nargin < 2
+    if nargin < 4
         studyFile = fullfile(outpath, [dsnumber '.study']);
         [STUDY, ALLEEG] = pop_loadstudy(studyFile);
     end
 
-    nGoodData = [];
-    goodDataPercentRaw = [];
-    nGoodChans = [];
-    goodChansPercentRaw = [];
-    icaFail = [];
-    nICs = [];
-    nGoodICs = [];
-    goodICAPercentRaw = [];
-    linenoise_magn = [];
-    check_chanlocs = [];
-    error_code = 0;
-    maxCount = 0;
-    for i=1:numel(ALLEEG)
-        EEG = ALLEEG(i);
-        dataqual_path = fullfile(EEG.filepath, [EEG.filename(1:end-4) '_dataqual.json']);
-        cur_report = jsonread(dataqual_path);
-        
-        if isfield(cur_report, 'nGoodData')
-            nGoodData = [nGoodData str2num(cur_report.nGoodData)];
-            [count, edges] = histcounts(nGoodData);
-            %maxCount = max([maxCount max(count)]);
-        end
-        if isfield(cur_report, 'goodDataPercentRaw')
-            goodDataPercentRaw = [goodDataPercentRaw str2num(cur_report.goodDataPercentRaw)];
-            [count, edges] = histcounts(goodDataPercentRaw);
-            maxCount = max([maxCount max(count)]);
-        end
-        if isfield(cur_report, 'nGoodChans')
-            nGoodChans = [nGoodChans cur_report.nGoodChans];
-            [count, edges] = histcounts(nGoodChans);
-            maxCount = max([maxCount max(count)]);
-        end
-        if isfield(cur_report, 'goodChansPercentRaw')
-            goodChansPercentRaw = [goodChansPercentRaw str2num(cur_report.goodChansPercentRaw)];
-            [count, edges] = histcounts(goodChansPercentRaw);
-            %maxCount = max([maxCount max(count)]);
-        end
-        if isfield(cur_report, 'icaFail')
-            icaFail = [icaFail cur_report.icaFail];
-            [count, edges] = histcounts(nICs);
-            %maxCount = max([maxCount max(count)]);
-        end
-        if isfield(cur_report, 'nICs')
-            nICs = [nICs cur_report.nICs];
-            [count, edges] = histcounts(nICs);
-            %maxCount = max([maxCount max(count)]);
-        end
-        if isfield(cur_report, 'nGoodICs')
-            nGoodICs = [nGoodICs cur_report.nGoodICs];
-            [count, edges] = histcounts(nGoodICs);
-            %maxCount = max([maxCount max(count)]);
-        end
-        if isfield(cur_report, 'goodICAPercentRaw')
-            goodICAPercentRaw = [goodICAPercentRaw str2num(cur_report.goodICAPercentRaw)]; 
-            [count, edges] = histcounts(goodICAPercentRaw);
-            maxCount = max([maxCount max(count)]);
-        end
-        if isfield(cur_report, 'linenoise_magn')
-            linenoise_magn = [linenoise_magn str2num(cur_report.linenoise_magn(1:numel(cur_report.linenoise_magn)-2))]; 
-            [count, edges] = histcounts(linenoise_magn);
-            maxCount = max([maxCount max(count)]);
-        end 
-    end
+    try 
+        reports = [];
+        maxCounts = [];
 
-    % generate histogram figures
-    generate_figure(dsnumber, numel(ALLEEG), goodChansPercentRaw, goodDataPercentRaw, goodICAPercentRaw, linenoise_magn, maxCount);
+        % assume that subjects in ALLEEG are always sorted
+        subjects = {ALLEEG.subject};
+        cur_subject = ALLEEG(1).subject;
+        total_count = 1;
+        for i=2:numel(ALLEEG)
+            if mergeset
+                if ~strcmp(ALLEEG(i).subject, subjects{i})
+                    error('Wrong subject indexing');
+                end
+                if ~strcmp(ALLEEG(i).subject, cur_subject)
+                    total_count = total_count + 1;
+                    % found a new subject, save merged dataset and process
+                    filename = regexp(ALLEEG(i-1).filename, 'sub-([a-zA-Z0-9]+)', 'match');
+                    filename = [filename{1} '_task-combined_eeg.set'];
+                    filepath = ALLEEG(i-1).filepath;
 
-    % update nemar.json
-    nemarjson_path = fullfile(outpath, 'code', 'nemar.json');
-    nemarjson = jsonread(nemarjson_path);
-    if isfield(nemarjson, 'data_quality')
+                    EEG = pop_loadset('filename', filename, 'filepath', filepath, 'loadmode', 'info');
+                    [report, maxCount] = get_dataqual_status(EEG);
+                    reports = [reports report];
+                    maxCounts = [maxCounts maxCount];
+
+                    % load new subject
+                    cur_subject = subjects{i};
+                end
+            else
+                total_count = total_count + 1;
+                EEG = ALLEEG(i);
+                [report, maxCount] = get_dataqual_status(EEG);
+                reports = [reports report];
+                maxCounts = [maxCounts maxCount];
+            end
+        end
+
+        % parse reports
+        nGoodData = [reports.nGoodData]; nGoodData = nGoodData(~isnan(nGoodData));
+        goodDataPercentRaw = [reports.goodDataPercentRaw]; goodDataPercentRaw = goodDataPercentRaw(~isnan(goodDataPercentRaw));
+        nGoodChans = [reports.nGoodChans]; nGoodChans = nGoodChans(~isnan(nGoodChans));
+        goodChansPercentRaw = [reports.goodChansPercentRaw]; goodChansPercentRaw = goodChansPercentRaw(~isnan(goodChansPercentRaw));
+        icaFail = [reports.icaFail]; icaFail = icaFail(~isnan(icaFail));
+        nICs = [reports.nICs]; nICs = nICs(~isnan(nICs));
+        nGoodICs = [reports.nGoodICs]; nGoodICs = nGoodICs(~isnan(nGoodICs));
+        goodICAPercentRaw = [reports.goodICAPercentRaw]; goodICAPercentRaw = goodICAPercentRaw(~isnan(goodICAPercentRaw));
+        linenoise_magn = [reports.linenoise_magn]; linenoise_magn = linenoise_magn(~isnan(linenoise_magn));
+
+        % generate histogram figures
+        generate_figure(dsnumber, total_count, participant_tsv, goodChansPercentRaw, goodDataPercentRaw, goodICAPercentRaw, linenoise_magn, maxCount);
+
+        % update nemar.json
+        nemarjson_path = fullfile(outpath, 'code', 'nemar.json');
+        nemarjson = jsonread(nemarjson_path);
+        if mergeset
+            nemarjson.data_quality.merged_dataset = true;
+        end
+        if ~isfield(nemarjson, 'data_quality')
+            nemarjson.data_quality = [];
+        end
         nemarjson.data_quality.good_channels_lower_bound = min(nGoodChans);
         nemarjson.data_quality.good_channels_higher_bound = max(nGoodChans);
         nemarjson.data_quality.good_data_lower_bound = min(nGoodData);
@@ -99,15 +89,65 @@ function [STUDY, ALLEEG, error_code] = nemar_dataqual(dsnumber, STUDY, ALLEEG, o
             nemarjson.data_quality.check_import = sum(status_tbl.check_import);
             nemarjson.data_quality.check_chanloc = sum(status_tbl.check_chanloc);
         end
+        plot = [];
+        plot.title = "Histogram of data quality measures";
+        plot.extension = [dsnumber '_histogram.png'];
+        nemarjson.plots = [plot];
+        jsonwrite(nemarjson_path, nemarjson);    % it's collapsing the plots array right now. Not working
+    catch ME
+        warning('Dataset loaded but failed to generate data quality histogram')
+        ME.message
+        ME.stack
     end
-    plot = [];
-    plot.title = "Histogram of data quality measures";
-    plot.extension = [dsnumber '_histogram.png'];
-    nemarjson.plots = [plot];
-    jsonwrite(nemarjson_path, nemarjson);    % it's collapsing the plots array right now. Not working
 
-    function generate_figure(dsnumber, total_count, goodChansPercentRaw, goodDataPercentRaw, goodICAPercentRaw, linenoise_magn, maxCount)
-        % figure('position', [629   759   896   578], 'color', 'w');
+    function [report, maxCount] = get_dataqual_status(EEG)
+        dataqual_path = fullfile(EEG.filepath, [EEG.filename(1:end-4) '_dataqual.json']);
+        cur_report = jsonread(dataqual_path);
+        report = [];
+        fields = {'nGoodData', 'goodDataPercentRaw', 'nGoodChans', 'goodChansPercentRaw', 'icaFail', 'nICs', 'nGoodICs', 'goodICAPercentRaw', 'linenoise_magn'};
+        for f=1:numel(fields)
+            report.(fields{f}) = nan;
+        end
+        maxCount = 0;
+        
+        if isfield(cur_report, 'nGoodData')
+            report.nGoodData = str2num(cur_report.nGoodData);
+        end
+        if isfield(cur_report, 'goodDataPercentRaw')
+            report.goodDataPercentRaw = str2num(cur_report.goodDataPercentRaw);
+            [count, edges] = histcounts(report.goodDataPercentRaw);
+            maxCount = max([maxCount max(count)]);
+        end
+        if isfield(cur_report, 'nGoodChans')
+            report.nGoodChans = cur_report.nGoodChans;
+            [count, edges] = histcounts(report.nGoodChans);
+            maxCount = max([maxCount max(count)]);
+        end
+        if isfield(cur_report, 'goodChansPercentRaw')
+            report.goodChansPercentRaw = str2num(cur_report.goodChansPercentRaw);
+        end
+        if isfield(cur_report, 'icaFail')
+            report.icaFail = cur_report.icaFail;
+        end
+        if isfield(cur_report, 'nICs')
+            report.nICs = cur_report.nICs;
+        end
+        if isfield(cur_report, 'nGoodICs')
+            report.nGoodICs = cur_report.nGoodICs;
+        end
+        if isfield(cur_report, 'goodICAPercentRaw')
+            report.goodICAPercentRaw = str2num(cur_report.goodICAPercentRaw);
+            [count, edges] = histcounts(report.goodICAPercentRaw);
+            maxCount = max([maxCount max(count)]);
+        end
+        if isfield(cur_report, 'linenoise_magn')
+            report.linenoise_magn = str2num(cur_report.linenoise_magn(1:numel(cur_report.linenoise_magn)-2));
+            [count, edges] = histcounts(report.linenoise_magn);
+            maxCount = max([maxCount max(count)]);
+        end 
+    end
+
+    function generate_figure(dsnumber, total_count, participant_tsv, goodChansPercentRaw, goodDataPercentRaw, goodICAPercentRaw, linenoise_magn, maxCount)
         fig = figure('position', [629   759   896   878], 'color', 'w');
         set(fig,'defaultAxesColorOrder',[[0 0 0]; [0 0 0]]);
         fontsize = 15;
@@ -116,7 +156,7 @@ function [STUDY, ALLEEG, error_code] = nemar_dataqual(dsnumber, STUDY, ALLEEG, o
         cleanraw_count = numel(goodDataPercentRaw);
         ica_count = numel(goodICAPercentRaw);
         process_status = [cleanraw_count total_count-cleanraw_count; ica_count total_count-ica_count];
-        ba = bar(process_status, 'BarLayout', 'stacked', 'BarWidth', 0.4); %, 'FaceAlpha', 0.5);
+        ba = bar(process_status, 'BarLayout', 'stacked', 'BarWidth', 0.4); 
         ba(1).FaceColor = [8/255, 135/255, 1/255];
         ba(2).FaceColor = [216/255, 44/255, 1/255];
         title('Pipeline success','FontWeight','Normal');
@@ -133,22 +173,19 @@ function [STUDY, ALLEEG, error_code] = nemar_dataqual(dsnumber, STUDY, ALLEEG, o
         colorBad = [0.5 0 0]; % #d82c01
         jetColor = jet;
         halfJet = jetColor(end:-1:129,:);
-        [counts, edges] = histcounts(goodDataPercentRaw, bins)
+        [counts, edges] = histcounts(goodDataPercentRaw, bins);
         yyaxis right
-        b = bar(edges(1:end-1), counts, 'BarWidth', 0.8, 'FaceColor', 'flat');%[0.4660 0.6740 0.1880]);
+        b = bar(edges(1:end-1), counts, 'BarWidth', 0.8, 'FaceColor', 'flat');
         colorsIdx = round(linspace(1,size(halfJet,1),numel(counts)));
-        colorscheme = halfJet(colorsIdx, :); % interp1([0;1],[colorBad; colorGood],round(linspace(1,numel(halfJet),numel(bins))));
+        colorscheme = halfJet(colorsIdx, :); 
         colorscheme = colorscheme*0.9;
-        colorscheme(colorscheme>1) = 1
-        colorscheme
-        colormap(colorscheme)
+        colorscheme(colorscheme>1) = 1;
+        colormap(colorscheme);
         colorbar('Location', 'westoutside', 'Ticks',[0, 1], 'TickLabels', {'Poor', 'Good'});
-        % colorscheme = interp1([0;1],[colorBad; colorGood],linspace(0,1,numel(counts)));
         b.CData = colorscheme;
         xlim([0 100])
         xticks(0:20:100)
         limits = ylim;
-        % title('Data frames','FontWeight','Normal');
         xlabel('Data frames retained (%)');
         ylabel(sprintf('Recordings (# of %d)', total_count), 'Color', 'k');
 
@@ -158,54 +195,41 @@ function [STUDY, ALLEEG, error_code] = nemar_dataqual(dsnumber, STUDY, ALLEEG, o
 
         subplot(3,2,3)
         bins = min(linenoise_magn):2:max(linenoise_magn);
-        [counts, edges] = histcounts(linenoise_magn, bins)
-        b = bar(edges(1:end-1), counts, 'BarWidth', 0.8, 'FaceColor', 'flat');%[0.4660 0.6740 0.1880]);
+        [counts, edges] = histcounts(linenoise_magn, bins);
+        b = bar(edges(1:end-1), counts, 'BarWidth', 0.8, 'FaceColor', 'flat');
         colorsIdxLinenoise = round(linspace(1,size(halfJet,1),numel(counts)));
-        colorschemeLinenoise = halfJet(flip(colorsIdxLinenoise), :) % interp1([0;1],[colorBad; colorGood],round(linspace(1,numel(halfJet),numel(bins))));
+        colorschemeLinenoise = halfJet(flip(colorsIdxLinenoise), :); 
         colormap(colorschemeLinenoise);
         b.CData = colorschemeLinenoise;
-        % title('Line noise','FontWeight','Normal');
         ylabel(sprintf('Recordings (# of %d)', total_count));
         xlabel('Line noise (channel RMS, dB)');
         set(gca, 'fontsize', fontsize);
 
         subplot(3,2,4)
-        % chans_below_threshold = goodChansPercentRaw(goodChansPercentRaw<90);
-        % chans_above_threshold = goodChansPercentRaw(goodChansPercentRaw>90);
-        % max_chans = max([chans_below_threshold, chans_above_threshold]);
         bins = 5:10:95;
-        [counts, edges] = histcounts(goodChansPercentRaw, bins)
+        [counts, edges] = histcounts(goodChansPercentRaw, bins);
         yyaxis right
-        b = bar(edges(1:end-1), counts, 'BarWidth', 0.8, 'FaceColor', 'flat');%[0.4660 0.6740 0.1880]);
-        % colorscheme = interp1([0;1],[colorBad; colorGood],linspace(0,1,numel(counts)));
+        b = bar(edges(1:end-1), counts, 'BarWidth', 0.8, 'FaceColor', 'flat');
         colormap(colorscheme);
         colorbar('Location', 'westoutside', 'Ticks',[0, 1], 'TickLabels', {'Poor', 'Good'});
         b.CData = colorscheme;
-        % hist2(chans_above_threshold, chans_below_threshold, bins);
-        % title('Data channels','FontWeight','Normal');
         xlabel(sprintf('Data channels retained (%%)\n  '));
         ylabel(sprintf('Recordings (# of %d)', total_count), 'Color', 'k');
-        % legend({'Good' 'Problematic' },'Location','northeast');
         xlim([0 100])
         xticks(0:20:100)
-        % limits = ylim
-        % limits
-        % yticks([1:round((limits(2)-1)/5):limits(2)])
         set(gca, 'fontsize', fontsize);
 
         yyaxis left
         yticklabels({[]})
         ylabel('');
 
-        participant_ax = subplot(3,2,[5 6])
+        participant_ax = subplot(3,2,[5 6]);
         try
-            generateParticipantFig(dsnumber, participants_tsv) 
+            generateParticipantFig(participant_tsv);
         catch ME
             warning('Failed to generate participant figure')
-            fprint('Error: %s\n', ME.message)
-            fprint('Stack: %s\n', ME.stack)
-            error_code = 3;
-            pause(3)
+            ME.message
+            ME.stack
             delete(participant_ax)
         end
         set(gca, 'fontsize', fontsize);
@@ -215,100 +239,7 @@ function [STUDY, ALLEEG, error_code] = nemar_dataqual(dsnumber, STUDY, ALLEEG, o
         close
     end
 
-    function res = has_file(dspath, fileext)
-        res = 0;
-        dsdir = dir(dspath);
-        curfile = [];
-        while ~isempty(dsdir)
-            curfile = dsdir(1);
-            dsdir(1) = [];
-            if curfile.isdir 
-                if ~any(strcmp(curfile.name, {'.','..'}))
-                    child_dir = dir(fullfile(curfile.folder, curfile.name));
-                    dsdir = [dsdir; child_dir];
-                end
-            else
-                if endsWith(curfile.name, fileext)
-                    res = 1;
-                    return
-                end
-            end
-        end
-    end
-    function res = has_hed(dspath)
-        res = 0;
-        dsdir = dir(dspath);
-        curfile = [];
-        while ~isempty(dsdir)
-            curfile = dsdir(1);
-            dsdir(1) = [];
-            if curfile.isdir 
-                if ~any(strcmp(curfile.name, {'.','..'}))
-                    child_dir = dir(fullfile(curfile.folder, curfile.name));
-                    dsdir = [dsdir; child_dir];
-                end
-            else
-                if endsWith(curfile.name, 'events.json')
-                    eventjson = jsonread(fullfile(curfile.folder, curfile.name));
-                    % if any of the event key has HED. Structure format: column -> HED
-                    columns = fieldnames(eventjson);
-                    for c=1:numel(columns)
-                        col_struct = eventjson.(columns{c});
-                        if isfield(col_struct, 'HED')
-                            res = 1;
-                            return
-                        end
-                    end
-                end
-            end
-        end
-    end
-
-    function hist2(data1, data2, bins);
-        % HIST2 - draw superimposed histograms
-        %
-        % Usage:
-        %   >> hist2(data1, data2, bins);
-        %
-        % Inputs:
-        %   data1   - data to plot first process
-        %   data2   - data to plot second process
-        %
-        % Optional inputs:
-        %   bins    - vector of bin center
-        %
-        % Author: Arnaud Delorme (SCCN, UCSD)
-
-        if nargin < 1
-            help hist2;
-            return;
-        end
-        if nargin < 3
-            bins = linspace(min(min(data1), min(data2)), max(max(data1), max(data2)), 100);
-        elseif length(bins) == 1
-            bins = linspace(min(min(data1), min(data2)), max(max(data1), max(data2)), bins);
-        end
-        
-        hist(data1, bins);
-        hold on; hist(data2, bins);
-
-        %figure; hist( [ measure{:,5} ], 20);
-        %hold on; hist([ measure{:,2} ], 20);
-        c = get(gca, 'children');
-        set(gca, 'fontname', 'arial');
-        numfaces = size(get(c(1), 'Vertices'),1);
-        set(c(1), 'FaceVertexCData', repmat([1 0 0], [numfaces 1]), 'Cdatamapping', 'direct', 'edgecolor', 'k', 'facecolor',[0.64 0.13 0.08]); %[0.8500 0.3250 0.0980]); 
-        numfaces = size(get(c(2), 'Vertices'),1);
-        set(c(2), 'FaceVertexCData', repmat([0 0 1], [numfaces 1]), 'Cdatamapping', 'direct', 'edgecolor', 'k', 'facecolor', [0.4660 0.6740 0.1880]); 
-        ylabel('Number of values');
-        % xlim([bins(1) bins(end)]);
-        
-        % yl = ylim;
-        % xl = xlim;
-        % line([xl(1) xl(1)]+(xl(2)-xl(1))/2000, yl, 'color', 'k');
-        % line(xl, [yl(1) yl(1)]+(yl(2)-yl(1))/2000, 'color', 'k');
-    end
-    function generateParticipantFig(dsnumber, participant_tsv)
+    function generateParticipantFig(participant_tsv)
         % read the participants.tsv file
         participant_tbl = readtable(participant_tsv, 'FileType', 'text', 'Delimiter', '\t');
         % get the participant_id column
@@ -317,14 +248,14 @@ function [STUDY, ALLEEG, error_code] = nemar_dataqual(dsnumber, STUDY, ALLEEG, o
         participant_columns = participant_tbl.Properties.VariableNames;
         participant_columns_lower = lower(participant_columns);
         if ismember('age', participant_columns_lower)
-            age = participant_tbl.(participant_columns{strcmp(participant_columns_lower, 'age')})
+            age = participant_tbl.(participant_columns{strcmp(participant_columns_lower, 'age')});
         end
         % get the sex column
         if ismember('gender', participant_columns_lower)
-            gender_col = participant_columns(strcmp(participant_columns_lower, 'gender'))
+            gender_col = participant_columns(strcmp(participant_columns_lower, 'gender'));
         end
         if ismember('sex', participant_columns_lower)
-            gender_col = participant_columns(strcmp(participant_columns_lower, 'sex'))
+            gender_col = participant_columns(strcmp(participant_columns_lower, 'sex'));
         end
         gender = lower(participant_tbl.(gender_col{1}));
         if ismember('m', gender)
@@ -338,15 +269,12 @@ function [STUDY, ALLEEG, error_code] = nemar_dataqual(dsnumber, STUDY, ALLEEG, o
         % create a figure
         gaps = 10;
         age_range = max(age) - min(age);
-        age_range_increment = max(1,round(0.1*age_range))
-        edges = min(age)-age_range_increment:age_range_increment:max(age)+age_range_increment %round(linspace(min(age)-1, max(age)+1, gaps))
-        [~, edges] = histcounts(age, edges)
-        [female_age_counts,~] = histcounts(age_female, edges)
-        [male_age_counts,~] = histcounts(age_male, edges)
-        % center_female = 0.5*(edges(1:end-1)+edges(2:end));
-        % center_male = 0.5*(edges(1:end-1)+edges(2:end));
-        % edges = round(edges)
-        center = 0.5*(edges(1:end-1)+edges(2:end))
+        age_range_increment = max(1,round(0.1*age_range));
+        edges = min(age)-age_range_increment:age_range_increment:max(age)+age_range_increment; 
+        [~, edges] = histcounts(age, edges);
+        [female_age_counts,~] = histcounts(age_female, edges);
+        [male_age_counts,~] = histcounts(age_male, edges);
+        center = 0.5*(edges(1:end-1)+edges(2:end));
         age_hist = [male_age_counts; female_age_counts];
         b = bar(center, age_hist, 'BarLayout', 'stacked', 'BarWidth', 1);
         title({'';'Age and gender'},'FontWeight','Normal');
@@ -355,15 +283,12 @@ function [STUDY, ALLEEG, error_code] = nemar_dataqual(dsnumber, STUDY, ALLEEG, o
         b(2).FaceColor =[212/255 95/255 154/255]; % #D45F9A female
         b(2).DisplayName = 'Female'; % #D45F9A female
 
-        %bar(center, male_age_counts, 'BarWidth', 0.8,'FaceColor',[0.64 0.13 0.08]); hold on; bar(center, female_age_counts, 'BarWidth', 0.8,'FaceColor', [0.4660 0.6740 0.1880]);
         xticks(edges);
         ylabel(sprintf('Subjects (# of %d)', numel(participant_id)));
-        xlabel('Subject age by gender (years)')
+        xlabel('Subject age by gender (years)');
         y = ylim;
         
         ylim([0 y(2) + ceil(y(2)*0.2)]);
-        % legend({sprintf('%d Female', numel(age_female)) sprintf('%d Male', numel(age_male))});
         legend([b(2), b(1)]);
-        % hist2(age_male, age_female)
     end
 end
