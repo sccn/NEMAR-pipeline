@@ -71,8 +71,12 @@ def append_debug(df, processing):
     path = os.path.join(processed_dir, df['dsnumber'][0])
     if not os.path.exists(os.path.join(path, 'logs', 'debug')):
         os.mkdir(os.path.join(path, 'logs', 'debug'))
-        os.system(f'chgrp -R nemar {os.path.join(path, "logs", "debug")}')
-        os.system(f'chmod -R 775 {os.path.join(path, "logs", "debug")}')
+        try:
+            os.system(f'chgrp -R nemar {os.path.join(path, "logs", "debug")}')
+            os.system(f'chmod -R 775 {os.path.join(path, "logs", "debug")}')
+        except:
+            print(f'Cannot change permission for debug logs')
+            
     notes = ""
     if os.path.isdir(path):
         if check_status(df):
@@ -218,7 +222,10 @@ def aggregate_ind_status(dsnumber) -> pd.DataFrame:
     log_dir = os.path.join(processed_dir, dsnumber, 'logs')
     if not os.path.exists(log_dir):
         os.mkdir(log_dir)
-        os.system(f'chmod -R 776 {log_dir}') # add write permission to group
+        try:
+            os.system(f'chmod -R 776 {log_dir}') # add write permission to group
+        except:
+            print(f'Cannot change permission for {log_dir}')
 
     with open(os.path.join(log_dir, 'pipeline_plugins_status.csv'), 'w') as out:
         final_status_df.to_csv(out, index=False)

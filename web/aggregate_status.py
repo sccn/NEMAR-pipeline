@@ -311,7 +311,10 @@ def aggregate_ind_status(dsnumber, processed_dir=processed_dir):
     log_dir = os.path.join(processed_dir, dsnumber, 'logs')
     if not os.path.exists(log_dir):
         os.mkdir(log_dir)
-        os.system(f'chmod -R 776 {log_dir}') # add write permission to group
+        try:
+            os.system(f'chmod -R 776 {log_dir}') # add write permission to group
+        except:
+            pass
 
     with open(os.path.join(log_dir, 'pipeline_status.csv'), 'w') as out:
         final_status_df.to_csv(out, index=False)
