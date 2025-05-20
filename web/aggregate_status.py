@@ -16,6 +16,7 @@ sccn_dir = "/var/local/www/eeglab/NEMAR"
 final_file = os.path.join(sccn_dir,"pipeline_status_all.csv") #"/data/qumulo/openneuro/processed/logs/pipeline_status_all.csv" #"/expanse/projects/nemar/dtyoung/NEMAR-pipeline/temp/processed/pipeline_status_all.csv"
 final_file_html = os.path.join(sccn_dir,"pipeline_status_all.html") #"/data/qumulo/openneuro/processed/logs/pipeline_status_all.html" 
 manual_note_dir = "/var/local/www/eeglab/NEMAR/manual_notes"
+check_processing_flag = False
 try:
     logfile = open(os.path.join(sccn_dir,'log.txt'),'w')
 except OSError:
@@ -323,8 +324,11 @@ def aggregate_ind_status(dsnumber, processed_dir=processed_dir):
 
 
 def get_pipeline_status(dsnumbers, processed_dir=processed_dir):
-    processing = get_processing_ds()
-    processing = list(set([ds.decode('utf-8') for ds in processing]))
+    if check_processing_flag:
+        processing = get_processing_ds()
+        processing = list(set([ds.decode('utf-8') for ds in processing]))
+    else:
+        processing = []
     if dsnumbers:
         all_status = pd.read_csv(final_file)
         for ds in dsnumbers:
