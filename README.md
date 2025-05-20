@@ -1,6 +1,20 @@
 # NEMAR-pipeline
 Code for NEMAR pipeline to generate visualization and data quality report. Refactored https://github.com/sccn/app-test-NEMAR
 
+# Files contains in this repo
+- ds_create_and_submit_job.m, given a DS number, create a slurm job (create-submit-job.sh is the bash equivalent). This call run_pipeline.m. run_pipeline_custom.m is to call a specific function (plugin?) on each EEG file.
+- run_commands.m 
+- eeg_ uses EEG structures for preprocess (eeg_nemar_preprocess.m), plugins (eeg_nemar_plugin.m), data quality (eeg_nemar_dataqual.m). eeg_run_pipeline.m runs them all. eeg_create_and_submit_job.m runs at the dataset level.
+- check_dataset_custom_code, allow to inject custom code for a dataset
+- scan_processed_ds.py, add to the NEMAR.json file that this dataset has bad participant tsv file (manually provided)
+- processing_sbatch - quickly run pipeline
+
+# Folders
+- nemar_plugin - vizualization plugins
+- HED/summary - word cloud
+- sbatch - all sbatch commands
+- web/aggregate_status.py
+
 # Using your own function
 
 - Make sure you have an Expanse

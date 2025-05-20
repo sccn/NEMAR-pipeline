@@ -1,3 +1,5 @@
+% allow to inject custom code for a dataset
+
 function check_dataset_custom_code(dsnumber)
 dataset_code_dirname = 'dataset-code';
 path = which("run_pipeline");

@@ -1,3 +1,5 @@
+% load the study and all the datasets in it
+
 function [STUDY, ALLEEG, dsname] = load_dataset(filepath, outputDir, modeval, subjects, ctffunc, varargin)
     % check EEGLAB environment
     if plugin_status('bids-matlab-tools') == 0 && plugin_status('EEG-BIDS') == 0

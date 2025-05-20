@@ -1,3 +1,6 @@
+% For example 
+% run_pipeline('ds004262','preprocess', false', 'vis', true', 'dataqual', true, 'modeval','resume','maxparpool', 0, 'run_local', True)
+ 
 function run_pipeline(dsnumber, varargin)
     nemar_path = '/expanse/projects/nemar/openneuro';
     eeglabroot = '/expanse/projects/nemar/eeglab';
