@@ -1,0 +1,283 @@
+dsnumber,icaact,iclabel,iclabel_hist,midraw,spectra,debug_note,manual_debug_note
+ds004841,11/147,11/147,11/147,11/147,ok,,
+ds004770,,,,,,,
+ds004561,,,,,,,
+ds000247,,,,,,,
+ds005131,30/63,30/63,30/63,30/63,30/63,,"Most subjects don't have channel information since channel names are numbered, not 10-20. Yet some has channels in 10-20 hence probably looked up by bids import. See sub-128/ses-1 (standard name) vs sub-134/ses-2 (numbered name) for example"
+ds003753,ok,ok,ok,ok,ok,ok,
+ds003420,ok,ok,ok,0/3,ok,,
+ds005028,0/105,0/105,0/105,0/105,0/105,,Done. NEMAR.json updated. This is 10-20 but the channel locations are not readily available.
+ds004010,,,,,,,
+ds004148,ok,ok,ok,ok,ok,ok,
+ds005170,ok,ok,ok,ok,ok,ok,
+ds004840,ok,0/51,ok,ok,ok,,
+ds002725,ok,ok,ok,ok,ok,ok,
+ds004362,,,,,,,
+ds005514,ok,ok,ok,ok,ok,ok,
+ds004408,ok,ok,ok,ok,ok,ok,Bad participants.tsv
+ds004796,175/235,175/235,175/235,175/235,ok,,
+ds002550,0/377,0/377,0/377,0/377,374/377,,Warning. Work in local mode. Check for batch mode.	
+ds004511,0/129,0/129,0/129,42/129,0/129,,Done. NEMAR.json now indicates an error because of unknown channels.
+ds002181,,,,,,,Done. Will not fix. NEMAR.json up to date.
+ds002893,ok,ok,42/52,ok,ok,ok,
+ds003682,0/336,0/336,0/336,0/336,0/336,,"Channel with no coordinates
+https://github.com/fieldtrip/fieldtrip/issues/2436"
+ds000248,0/1,0/1,0/1,ok,ok,,"Submit bug to fieldtrip, was working with version from 13 June 2023. Also, ask if they know the montage and have MEG sensor and EEG sensor location for it. ABCD https://github.com/sccn/NEMAR-pipeline/issues/67"
+ds003190,382/384,382/384,286/384,382/384,382/384,,"Done with NEMAR warning about channel locations.
+participants.tsv has no columns except for id"
+ds004197,ok,ok,ok,ok,ok,ok,
+ds003822,0/25,0/25,ok,0/25,0/25,,
+ds003670,,,,,,,
+ds003754,20/21,0/21,0/21,ok,6/21,,
+ds004554,0/16,0/16,0/16,0/16,ok,,
+ds004917,,,,,,,
+ds004574,ok,ok,ok,ok,ok,ok,
+ds004357,ok,ok,ok,ok,ok,ok,
+ds003082,,,,,,,Warning. Work in local mode. Check for batch mode.	
+ds004519,ok,ok,ok,0/40,ok,,"Add Warning to NEMAR file. Warning: data is epoched, so some visualization function are not functional. Note that the data is marked as ""raw"" so it is not technically BIDS compliant because raw EEG data is continuous. This is why clean_rawdata fails."
+ds004602,,,,,,,
+ds004151,ok,ok,ok,ok,ok,ok,
+ds003800,,,,,,,
+ds003846,ok,ok,0/60,ok,ok,,
+ds002799,,,,,,,"No ieeg data found in any of the subject directories
+"
+ds004024,,,,,,,Done. Will not fix. NEMAR.json up to date. Too large.
+ds003694,0/3,0/3,0/3,2/3,ok,,Run again one subject at a time. Log file not created but we do not know why. 
+ds004350,ok,ok,ok,ok,ok,ok,
+ds004105,ok,33/34,33/34,ok,ok,ok,
+ds004771,,,,,,,
+ds003518,123/137,123/137,129/137,123/137,123/137,ok,
+ds003702,ok,ok,ok,ok,ok,ok,"
+"
+ds004577,ok,129/130,129/130,ok,ok,ok,No age in participants.tsv
+ds004127,,,,,,,OOM with 64GB of memory for each datarun. Trying 120G
+ds003574,ok,ok,ok,ok,ok,ok,
+ds004703,,,,,,,
+ds004398,,,,,,,Try importing the dataset with Fieldtrip and the CTF plugin. 11/27
+ds003523,214/221,214/221,ok,214/221,214/221,ok,sex column in participants.tsv uses binary encoding
+ds004212,0/2,0/2,0/2,0/2,ok,,Warning. Work in local mode. Check for batch mode.
+ds004347,ok,ok,ok,ok,ok,ok,
+ds004588,ok,ok,ok,ok,ok,ok,
+ds001787,ok,ok,ok,ok,ok,ok,
+ds003505,,,,,,,
+ds003568,,,,,,,
+ds004504,ok,ok,ok,ok,ok,ok,Good pipeline example
+ds003703,0/50,0/50,0/50,43/50,ok,,
+ds003987,ok,ok,0/69,0/69,ok,,
+ds004078,10/217,10/217,0/217,ok,214/217,,Warning. Work in local mode. Check for batch mode.	
+ds003392,,,,,,,Done. Will not fix. NEMAR.json up to date.
+ds004317,ok,ok,ok,ok,ok,ok,
+ds004122,ok,ok,ok,ok,ok,ok,
+ds004118,,,,,,,
+ds004033,,,,,,,
+ds004011,0/12,0/12,0/12,0/12,10/12,,Warning. Work in local mode. Check for batch mode.	
+ds003876,35/36,0/36,0/36,35/36,5/36,,
+ds004166,,,,,,,
+ds004330,0/63,0/63,0/63,2/63,53/63,,Has channel location when importing with File-IO. See https://github.com/sccn/EEG-BIDS/issues/226
+ds004256,30/53,30/53,30/53,30/53,29/53,,Done with NEMAR warning about channel locations.	
+ds004315,ok,ok,ok,ok,ok,ok,
+ds003474,ok,ok,ok,ok,ok,ok,
+ds002034,ok,ok,ok,ok,ok,ok,"nemar_dataqual
+MATLAB:histcounts:expectedInteger
+Expected input number 2, m, to be integer-valued.
+Error using histcounts
+Expected input number 2, m, to be integer-valued.
+
+Error in histcounts (line 139)
+            validateattributes(in,{'numeric','logical'},{'integer', 'positive'}, ...
+
+Error in nemar_dataqual/generate_figure (line 156)
+        [counts, edges] = histcounts(linenoise_magn, bins)
+
+Error in nemar_dataqual (line 76)
+    generate_figure(dsnumber, numel(ALLEEG), goodChansPercentRaw, goodDataPercentRaw, goodICAPercentRaw, linenoise_magn, maxCount);
+
+Error in process_all_dataqual (line 14)
+        nemar_dataqual(dsnumber);"
+ds003509,,,,,,,
+ds004186,,,,,,,NEMAR.json updated. NDARNZ792HBN duplicate subject. https://github.com/sccn/NEMAR-pipeline/issues/66
+ds003825,,,,,,,
+ds004121,ok,ok,ok,ok,ok,ok,
+ds004635,,,,,,,
+ds003516,ok,ok,ok,ok,ok,ok,
+ds004575,ok,ok,ok,ok,ok,ok,
+ds004348,ok,ok,ok,ok,ok,ok,
+ds003633,0/23,0/23,0/23,15/23,ok,,Warning. Work in local mode. Check for batch mode.	
+ds004598,0/20,0/20,0/20,0/20,0/20,,Done. NEMAR.json now indicates an error because of unknown channels.	
+ds003195,13/20,13/20,ok,13/20,13/20,,Bad participants.tsv file
+ds004473,ok,0/7,0/7,0/7,ok,,
+ds002908,,,,,,,
+ds003848,ok,0/7,0/7,0/7,ok,,
+ds002336,15/17,16/17,16/17,15/17,16/17,ok,
+ds004043,ok,17/20,17/20,ok,ok,ok,
+ds003517,ok,ok,ok,ok,ok,ok,
+ds004368,,,,,,,"Add Warning to NEMAR file. Warning: data is epoched, so some visualization function are not functional. Note that the data is marked as ""raw"" so it is not technically BIDS compliant because raw EEG data is continuous."
+ds004584,ok,ok,ok,ok,ok,ok,
+ds003374,0/9,0/9,0/9,0/9,0/9,,
+ds005512,237/239,237/239,237/239,ok,238/239,ok,
+ds003506,82/84,82/84,80/84,ok,82/84,ok,
+ds004284,,,,,,,
+ds004738,,,,,,,Crashed because of one session with no data https://github.com/sccn/NEMAR-pipeline/issues/83
+ds003570,ok,ok,28/32,ok,ok,ok,"Excluded failed subjects [3 4 5 13 19 22]
+"
+ds003490,,,,,,,
+ds002720,ok,ok,164/165,ok,ok,ok,
+ds002094,ok,ok,ok,ok,ok,ok,
+ds002833,0/80,0/80,0/80,0/80,0/80,,
+ds002218,ok,ok,ok,ok,ok,ok,No participants.tsv file
+ds000117,,,,,,,
+ds004120,,,,,,,
+ds004119,,,,,,,
+ds004117,ok,ok,74/85,ok,ok,ok,
+ds004194,154/166,0/166,0/166,158/166,160/166,,
+ds004264,20/21,ok,ok,20/21,20/21,ok,
+ds004215,1/513,1/513,0/513,26/513,2/513,,Done with NEMAR warning about channel locations.	
+ds004446,ok,ok,ok,0/129,0/129,,EGI data. Should run again.
+ds002722,81/82,81/82,81/82,ok,81/82,ok,
+ds004457,ok,ok,ok,ok,ok,ok,
+ds004505,ok,ok,ok,0/25,ok,,
+ds002885,,,,,,,Done. Will not fix. NEMAR.json up to date.
+ds004019,50/51,ok,ok,50/51,50/51,ok,
+ds004580,141/147,141/147,ok,141/147,141/147,ok,
+ds003944,ok,ok,79/80,0/80,ok,,
+ds004279,,,,,,,
+ds004532,ok,ok,ok,ok,ok,ok,
+ds004346,ok,ok,ok,ok,ok,ok,
+ds003816,,,,,,,Submitted batch job 26660542
+ds004572,507/510,ok,ok,507/510,507/510,ok,
+ds004696,,,,,,,
+ds004745,0/6,0/6,0/6,0/6,0/6,,Done. NEMAR.json updated. Location not available.
+ds004460,,,,,,,
+ds004075,ok,ok,ok,ok,ok,ok,Corrupted file need to be ignored. See https://github.com/sccn/NEMAR-pipeline/issues/84
+ds004447,ok,ok,ok,0/324,0/324,,
+ds004295,ok,24/26,24/26,ok,ok,ok,
+ds003519,ok,ok,ok,ok,ok,ok,
+ds004107,0/11,0/11,0/11,ok,10/11,,Warning. Work in local mode. Check for batch mode.	
+ds003458,ok,ok,ok,ok,ok,ok,
+ds004502,ok,ok,ok,ok,ok,ok,
+ds002724,94/96,94/96,ok,94/96,94/96,ok,
+ds003004,1/34,1/34,1/34,1/34,1/34,,
+ds003104,,,,,,,
+ds004200,ok,ok,ok,ok,ok,ok,
+ds002791,,,,,,,
+ds004015,ok,ok,ok,ok,ok,ok,
+ds004262,ok,ok,ok,ok,ok,ok,
+ds002712,,,,,,,Done. Will not fix. NEMAR.json up to date.
+ds004520,ok,ok,ok,0/33,ok,,
+ds004444,,,,,,,
+ds002723,ok,ok,ok,ok,ok,ok,
+ds004017,ok,ok,0/63,0/63,ok,,
+ds004595,ok,ok,ok,ok,ok,ok,
+ds004626,,,,,,,
+ds003751,26/38,36/38,36/38,26/38,0/38,,
+ds004475,,,,,,,
+ds000246,0/2,0/2,0/2,0/2,1/2,,
+ds005505,ok,ok,ok,ok,ok,ok,
+ds004515,ok,ok,ok,ok,ok,ok,
+ds004563,,,,,,,
+ds003421,,,,,,,
+ds002158,106/117,111/117,111/117,112/117,ok,ok,Good pipeline example
+ds005522,90/91,0/91,0/91,ok,40/91,,
+ds004483,,,,,,,Done. Will not fix. NEMAR.json up to date.
+ds002680,342/350,ok,ok,342/350,342/350,ok,
+ds004624,2/12,0/12,0/12,2/12,2/12,,"Rerun, see issue https://github.com/MaxvandenBoom/matmef/issues/7"
+ds004278,,,,,,,Warning. Work in local mode. Check for batch mode.
+ds003739,ok,ok,ok,ok,ok,ok,
+ds003774,202/240,202/240,202/240,202/240,202/240,ok,
+ds003194,ok,ok,ok,ok,ok,ok,
+ds004356,ok,2/3,2/3,ok,2/3,,Rerun with 120G of memory for each datarun
+ds004367,37/40,33/40,33/40,37/40,37/40,ok,
+ds004123,,,,,,,
+ds004369,36/41,36/41,36/41,ok,36/41,ok,
+ds004381,230/333,320/333,132/333,0/333,132/333,,
+ds003805,,,,,,,
+ds004196,ok,ok,ok,ok,ok,ok,
+ds002338,58/60,ok,ok,58/60,ok,ok,
+ds004022,ok,ok,ok,ok,ok,ok,
+ds005506,147/150,147/150,147/150,ok,149/150,ok,
+ds003838,123/130,ok,ok,123/130,123/130,ok,
+ds004579,ok,ok,ok,ok,ok,ok,
+ds004603,,,,,,,
+ds004752,ok,ok,65/68,ok,ok,ok,
+ds003768,60/255,60/255,ok,60/255,60/255,,
+ds003947,60/61,ok,7/61,0/61,ok,,
+ds004229,,,,,,,Done. Will not fix. NEMAR.json up to date.
+ds005507,178/180,179/180,178/180,179/180,179/180,ok,
+ds004040,ok,ok,ok,ok,ok,ok,
+ds004477,,,,,,,
+ds001785,44/54,44/54,44/54,52/54,ok,ok,
+ds003766,ok,ok,ok,ok,ok,ok,
+ds004276,,,,,,,Done. Will not fix. NEMAR.json up to date.
+ds005511,358/364,359/364,358/364,363/364,362/364,ok,
+ds004152,ok,ok,ok,ok,ok,ok,
+ds001971,272/273,252/273,ok,272/273,228/273,ok,participants.tsv file has 'sex' column instead of 'gender'
+ds002718,ok,ok,ok,ok,0/18,,
+ds003352,,,,,,,Done. Will not fix. NEMAR.json up to date.
+ds003626,ok,ok,26/30,ok,ok,ok,
+ds002691,ok,ok,ok,ok,ok,ok,
+ds003690,361/375,361/375,ok,361/375,361/375,ok,
+ds002814,160/168,164/168,ok,160/168,160/168,ok,
+ds003645,ok,ok,ok,ok,0/108,,
+ds004551,,,,,,,
+ds001784,8/30,8/30,8/30,24/30,24/30,,Done with NEMAR warning about channel locations.		
+ds003922,,,,,,,Done. Will not fix. NEMAR.json up to date.
+ds003810,,,,,,,
+ds004306,,,,,,,Done. Will not fix. NEMAR.json up to date.
+ds004642,,,,,,,
+ds003478,229/243,229/243,ok,229/243,229/243,ok,
+ds004100,,,,,,,Done. NEMAR.json updated. 
+ds003969,,,,,,,
+ds004000,0/86,0/86,0/86,ok,ok,,Error: epoched data was given to cleanraw
+ds003061,32/39,32/39,ok,32/39,32/39,ok,
+ds003638,ok,ok,ok,ok,ok,ok,
+ds004521,ok,ok,ok,0/34,ok,,
+ds002761,,,,,,,Done. Will not fix. NEMAR.json up to date.
+ds001849,ok,ok,ok,ok,ok,ok,Failed to generate dataset-level quality summary due to missing participants.tsv file
+ds003844,,,,,,,
+ds003039,ok,ok,ok,ok,ok,ok,
+ds004706,,,,,,,Done. NEMAR.json updated. >1Tb too large.
+ds004252,ok,ok,ok,ok,ok,ok,
+ds004448,,,,,,,
+ds003602,,,,,,,
+ds003380,,,,,,,
+ds004018,31/32,28/32,28/32,31/32,31/32,ok,
+ds004080,56/57,0/57,0/57,0/57,51/57,,
+ds004324,ok,ok,ok,ok,ok,ok,
+ds003887,ok,ok,ok,ok,ok,ok,
+ds003775,,,,,,,"
+"
+ds004106,,,,,,,
+ds003688,99/101,0/101,0/101,99/101,83/101,,
+ds002721,179/185,179/185,182/185,179/185,179/185,ok,
+ds003655,151/156,155/156,154/156,152/156,ok,ok,
+ds004395,,,,,,,Done. NEMAR.json updated. 8Tb dataset too large to process.
+ds004147,ok,ok,ok,ok,ok,ok,
+ds003483,0/24,0/24,0/24,23/24,ok,,Warning. Work in local mode. Check for batch mode.	
+ds003555,,,,,,,
+ds005520,ok,ok,22/46,ok,ok,,
+ds002778,ok,ok,ok,ok,ok,ok,
+ds004661,,,,,,,
+ds003885,ok,ok,ok,ok,ok,ok,
+ds004657,ok,ok,ok,ok,ok,ok,
+ds005523,,,,,,,
+ds003498,,,,,,,
+ds003522,186/200,186/200,ok,186/200,186/200,ok,
+ds005508,314/320,314/320,314/320,ok,314/320,ok,
+ds003710,41/48,41/48,ok,41/48,41/48,ok,
+ds003343,52/59,52/59,ok,52/59,52/59,ok,
+ds003708,,,,,,,
+ds002001,0/58,0/58,0/58,0/58,1/58,,
+ds005510,ok,ok,ok,ok,ok,ok,
+ds004067,38/44,38/44,38/44,ok,38/44,ok,"Pending Response
+contact authors. Badly formatted BIDS, subject 71 marker files. Status: pending.
+"
+ds005509,323/326,323/326,323/326,ok,323/326,ok,
+ds003078,,,,,,,
+ds003801,ok,ok,ok,ok,ok,ok,
+ds002578,0/2,0/2,ok,0/2,0/2,,
+ds003029,86/90,0/90,0/90,86/90,33/90,,
+ds001810,ok,ok,ok,ok,ok,ok,
+ds003620,ok,ok,ok,ok,ok,ok,"Issue tracked by https://github.com/sccn/NEMAR-pipeline/issues/29
+
+Ignored subject 36 which has corrupted data."
+ds004660,ok,ok,ok,ok,ok,ok,Bad participants.tsv file
