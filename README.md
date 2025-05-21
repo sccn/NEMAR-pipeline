@@ -1,6 +1,10 @@
 # NEMAR-pipeline
 Code for NEMAR pipeline to generate visualization and data quality report. Refactored https://github.com/sccn/app-test-NEMAR
 
+# Crontab
+*/15 * * * * /var/local/www/eeglab/NEMAR/get_pipeline_status.sh
+0 1 * * * /var/local/www/eeglab/NEMAR/get_pipeline_status.sh
+
 # Files contains in this repo
 - ds_create_and_submit_job.m, given a DS number, create a slurm job (create-submit-job.sh is the bash equivalent). This call run_pipeline.m. run_pipeline_custom.m is to call a specific function (plugin?) on each EEG file.
 - run_commands.m 
