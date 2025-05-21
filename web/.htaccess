@@ -1,4 +1,0 @@
-AuthType Basic 
-AuthName "Admin" 
-AuthUserFile /var/local/www/html/eeglab/plugin_uploader/protected/.htpasswd 
-Require valid-user 

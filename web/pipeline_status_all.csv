@@ -1,0 +1,279 @@
+dsnumber,check_import,check_chanloc,remove_chan,cleanraw,runica,iclabel,dataqual,modality,debug_note,manual_debug_note,latest_batch_run
+ds004841,ok,ok,ok,11/147,11/147,11/147,ok,eeg,,,08-29-2024
+ds004770,ok,ok,ok,7/22,7/22,0/22,7/22,ieeg,,,11-27-2023
+ds004561,ok,ok,ok,0/23,0/23,0/23,0/23,eeg,,,10-02-2023
+ds000247,ok,ok,ok,0/5,0/5,0/5,0/5,meg,,,10-18-2023
+ds005131,ok,30/63,30/63,30/63,30/63,30/63,ok,eeg,,"Most subjects don't have channel information since channel names are numbered, not 10-20. Yet some has channels in 10-20 hence probably looked up by bids import. See sub-128/ses-1 (standard name) vs sub-134/ses-2 (numbered name) for example",09-05-2024
+ds003753,ok,ok,ok,ok,ok,ok,ok,eeg,ok,,06-29-2023
+ds003420,ok,ok,ok,11/92,3/92,3/92,3/92,eeg,,,01-17-2024
+ds005028,ok,0/105,0/105,0/105,0/105,0/105,38/105,eeg,,Done. NEMAR.json updated. This is 10-20 but the channel locations are not readily available.,08-29-2024
+ds004010,ok,ok,ok,ok,ok,ok,ok,eeg,ok,,06-26-2023
+ds004148,ok,ok,ok,ok,ok,ok,ok,eeg,ok,,10-02-2023
+ds005170,ok,ok,ok,ok,ok,ok,ok,eeg,ok,,08-29-2024
+ds004840,ok,ok,ok,ok,ok,ok,ok,eeg,ok,,08-29-2024
+ds002725,ok,ok,ok,ok,ok,ok,ok,eeg,ok,,02-21-2024
+ds004362,ok,ok,ok,ok,ok,ok,215/1526,eeg,,,06-29-2023
+ds005514,ok,ok,ok,ok,283/295,283/295,283/295,eeg,ok,,12-17-2024
+ds004408,ok,ok,ok,ok,ok,ok,ok,eeg,ok,Bad participants.tsv,09-20-2024
+ds004796,ok,ok,150/235,179/235,175/235,175/235,ok,eeg,,,12-02-2024
+ds002550,ok,ok,ok,0/377,0/377,0/377,374/377,meg,,Warning. Work in local mode. Check for batch mode.	,08-21-2024
+ds004511,ok,0/129,0/129,0/129,0/129,0/129,ok,eeg,,Done. NEMAR.json now indicates an error because of unknown channels.,02-27-2024
+ds002181,-1,-1,-1,-1,-1,-1,-1,eeg,,Done. Will not fix. NEMAR.json up to date.,10-03-2023
+ds002893,ok,ok,ok,ok,ok,42/52,ok,eeg,ok,,08-03-2024
+ds003682,ok,0/336,0/336,0/336,0/336,0/336,ok,meg,,"Channel with no coordinates
+https://github.com/fieldtrip/fieldtrip/issues/2436",08-13-2024
+ds000248,ok,ok,ok,ok,0/1,0/1,ok,meg,,"Submit bug to fieldtrip, was working with version from 13 June 2023. Also, ask if they know the montage and have MEG sensor and EEG sensor location for it. ABCD https://github.com/sccn/NEMAR-pipeline/issues/67",02-26-2024
+ds003190,ok,382/384,382/384,382/384,382/384,382/384,ok,eeg,ok,"Done with NEMAR warning about channel locations.
+participants.tsv has no columns except for id",02-26-2024
+ds003822,ok,ok,ok,ok,ok,ok,ok,eeg,ok,,07-03-2023
+ds003670,ok,ok,ok,ok,ok,ok,ok,eeg,ok,,07-03-2023
+ds004554,ok,ok,ok,0/16,0/16,0/16,ok,eeg,,,01-17-2024
+ds004917,ok,ok,ok,0/24,0/24,0/24,0/24,eeg,,,08-28-2024
+ds004574,ok,ok,ok,ok,ok,ok,ok,eeg,ok,,08-28-2024
+ds004357,ok,ok,ok,ok,ok,ok,ok,eeg,ok,,06-26-2023
+ds003082,ok,ok,0/1,0/1,0/1,0/1,0/1,meg,,Warning. Work in local mode. Check for batch mode.	,08-21-2024
+ds004519,ok,ok,ok,0/40,0/40,0/40,ok,eeg,,"Add Warning to NEMAR file. Warning: data is epoched, so some visualization function are not functional. Note that the data is marked as ""raw"" so it is not technically BIDS compliant because raw EEG data is continuous. This is why clean_rawdata fails.",01-17-2024
+ds004602,ok,ok,ok,ok,0/546,0/546,ok,eeg,,,10-02-2023
+ds004151,ok,ok,ok,ok,ok,ok,ok,eeg,ok,,11-27-2023
+ds003800,ok,ok,ok,ok,ok,ok,ok,eeg,ok,,10-01-2023
+ds003846,ok,ok,ok,ok,ok,0/60,ok,eeg,,,09-12-2024
+ds002799,-1,-1,-1,-1,-1,-1,-1,ieeg,,"No ieeg data found in any of the subject directories
+",08-28-2024
+ds004024,-1,-1,-1,-1,-1,-1,-1,eeg,,Done. Will not fix. NEMAR.json up to date. Too large.,08-12-2024
+ds003694,ok,ok,ok,3/132,0/132,0/132,3/132,meg,,Run again one subject at a time. Log file not created but we do not know why. ,08-12-2024
+ds004350,ok,ok,ok,ok,211/217,211/217,211/217,eeg,ok,,09-15-2023
+ds004105,ok,ok,ok,ok,ok,ok,ok,eeg,ok,,06-26-2023
+ds004771,ok,ok,ok,0/61,0/61,0/61,ok,eeg,,,10-01-2023
+ds003518,ok,ok,ok,ok,129/137,129/137,ok,eeg,ok,,08-16-2023
+ds003702,ok,ok,ok,ok,ok,ok,ok,eeg,ok,"
+",02-21-2024
+ds004577,ok,ok,ok,ok,129/130,129/130,ok,eeg,ok,No age in participants.tsv,11-27-2023
+ds004127,ok,ok,ok,ok,0/73,0/73,0/73,ieeg,,OOM with 64GB of memory for each datarun. Trying 120G,05-10-2024
+ds003574,ok,ok,ok,ok,ok,ok,ok,eeg,ok,,01-24-2024
+ds004703,ok,ok,ok,7/11,7/11,0/11,7/11,ieeg,,,12-19-2023
+ds004398,ok,ok,ok,0/1,0/1,0/1,0/1,meg,,Try importing the dataset with Fieldtrip and the CTF plugin. 11/27,12-22-2023
+ds003523,ok,ok,ok,ok,ok,ok,ok,eeg,ok,sex column in participants.tsv uses binary encoding,06-29-2023
+ds004212,ok,ok,ok,2/480,0/480,0/480,2/480,meg,,Warning. Work in local mode. Check for batch mode.,08-21-2024
+ds004347,ok,ok,ok,ok,ok,ok,23/24,eeg,ok,,06-29-2023
+ds004588,ok,ok,ok,ok,ok,ok,ok,eeg,ok,,10-01-2023
+ds001787,ok,ok,ok,ok,ok,ok,ok,eeg,ok,,01-04-2024
+ds003505,ok,ok,ok,3/37,0/37,0/37,0/37,eeg,,,08-22-2023
+ds003568,ok,ok,ok,3/118,2/118,2/118,3/118,meg,,,10-18-2023
+ds004504,ok,ok,ok,ok,ok,ok,ok,eeg,ok,Good pipeline example,04-24-2024
+ds003703,ok,ok,ok,50/102,0/102,0/102,50/102,meg,,,05-08-2024
+ds003987,ok,ok,ok,ok,ok,0/69,ok,eeg,,,01-17-2024
+ds004078,ok,ok,ok,217/720,10/720,0/720,217/720,meg,,Warning. Work in local mode. Check for batch mode.	,08-21-2024
+ds003392,-1,-1,-1,-1,-1,-1,-1,meg,,Done. Will not fix. NEMAR.json up to date.,07-31-2023
+ds004317,ok,ok,ok,ok,ok,ok,ok,eeg,ok,,01-24-2024
+ds004122,ok,ok,ok,ok,ok,ok,ok,eeg,ok,,02-21-2024
+ds004118,ok,ok,ok,ok,12/22,12/22,12/22,eeg,,,10-02-2023
+ds004033,ok,ok,ok,ok,ok,ok,ok,eeg,ok,,06-23-2023
+ds004011,ok,ok,ok,0/132,0/132,0/132,12/132,meg,,Warning. Work in local mode. Check for batch mode.	,08-21-2024
+ds003876,ok,ok,ok,35/54,35/54,0/54,36/54,ieeg,,,02-21-2024
+ds004166,ok,ok,ok,ok,119/180,117/180,119/180,eeg,,,10-01-2023
+ds004330,ok,ok,ok,63/269,0/269,0/269,63/269,meg,,Has channel location when importing with File-IO. See https://github.com/sccn/EEG-BIDS/issues/226,08-29-2024
+ds004256,ok,30/53,30/53,30/53,30/53,30/53,ok,eeg,,Done with NEMAR warning about channel locations.	,02-26-2024
+ds004315,ok,ok,ok,ok,ok,ok,46/50,eeg,ok,,01-24-2024
+ds003474,ok,ok,ok,ok,ok,ok,ok,eeg,ok,,02-21-2024
+ds002034,ok,ok,ok,ok,ok,ok,ok,eeg,ok,"nemar_dataqual
+MATLAB:histcounts:expectedInteger
+Expected input number 2, m, to be integer-valued.
+Error using histcounts
+Expected input number 2, m, to be integer-valued.
+
+Error in histcounts (line 139)
+            validateattributes(in,{'numeric','logical'},{'integer', 'positive'}, ...
+
+Error in nemar_dataqual/generate_figure (line 156)
+        [counts, edges] = histcounts(linenoise_magn, bins)
+
+Error in nemar_dataqual (line 76)
+    generate_figure(dsnumber, numel(ALLEEG), goodChansPercentRaw, goodDataPercentRaw, goodICAPercentRaw, linenoise_magn, maxCount);
+
+Error in process_all_dataqual (line 14)
+        nemar_dataqual(dsnumber);",09-05-2023
+ds003509,ok,ok,ok,0/1,0/1,0/1,0/1,eeg,,,08-22-2023
+ds004186,-1,-1,-1,-1,-1,-1,-1,eeg,,NEMAR.json updated. NDARNZ792HBN duplicate subject. https://github.com/sccn/NEMAR-pipeline/issues/66,02-27-2024
+ds003825,ok,ok,ok,ok,ok,ok,49/50,eeg,ok,,06-26-2023
+ds004121,ok,ok,ok,ok,ok,ok,ok,eeg,ok,,06-26-2023
+ds004635,ok,ok,ok,20/55,0/55,0/55,20/55,eeg,,,10-02-2023
+ds003516,ok,ok,ok,ok,ok,ok,ok,eeg,ok,,01-24-2024
+ds004348,ok,ok,ok,ok,ok,12/18,ok,eeg,,,01-10-2024
+ds003633,ok,ok,ok,15/89,0/89,0/89,23/89,meg,,Warning. Work in local mode. Check for batch mode.	,08-21-2024
+ds004598,ok,0/20,0/20,0/20,0/20,0/20,ok,eeg,,Done. NEMAR.json now indicates an error because of unknown channels.	,08-13-2024
+ds003195,ok,ok,ok,ok,ok,ok,ok,eeg,ok,Bad participants.tsv file,01-24-2024
+ds004473,ok,ok,ok,7/8,7/8,0/8,7/8,ieeg,,,01-17-2024
+ds002908,ok,ok,ok,0/53,0/53,0/53,51/53,meg,,,12-22-2023
+ds003848,ok,ok,ok,8/22,7/22,0/22,7/22,ieeg,,,01-17-2024
+ds002336,ok,ok,ok,17/54,16/54,16/54,16/54,eeg,,,09-12-2024
+ds004043,ok,ok,ok,ok,ok,ok,ok,eeg,ok,,06-27-2023
+ds003517,ok,ok,ok,ok,ok,ok,ok,eeg,ok,,01-24-2024
+ds004368,ok,ok,ok,0/40,0/40,0/40,0/40,eeg,,"Add Warning to NEMAR file. Warning: data is epoched, so some visualization function are not functional. Note that the data is marked as ""raw"" so it is not technically BIDS compliant because raw EEG data is continuous.",10-12-2023
+ds004584,ok,ok,ok,ok,ok,ok,ok,eeg,ok,,11-27-2023
+ds003374,ok,ok,ok,ok,0/9,0/9,0/9,ieeg,,,01-17-2024
+ds005512,ok,ok,ok,256/257,237/257,237/257,239/257,eeg,ok,,12-17-2024
+ds003506,ok,ok,ok,ok,82/84,82/84,ok,eeg,ok,,02-21-2024
+ds004284,ok,ok,ok,3/18,3/18,3/18,3/18,eeg,,,11-27-2023
+ds004738,ok,ok,ok,0/13,0/13,0/13,0/13,meg,,Crashed because of one session with no data https://github.com/sccn/NEMAR-pipeline/issues/83,08-28-2024
+ds003570,ok,ok,ok,ok,28/32,28/32,ok,eeg,ok,"Excluded failed subjects [3 4 5 13 19 22]
+",09-15-2023
+ds003490,ok,ok,ok,ok,ok,ok,60/75,eeg,,,07-03-2023
+ds002720,ok,ok,ok,ok,ok,ok,ok,eeg,ok,,01-11-2024
+ds002094,ok,ok,ok,ok,ok,ok,ok,eeg,ok,,01-04-2024
+ds002833,ok,ok,ok,0/80,0/80,0/80,ok,eeg,,,02-21-2024
+ds002218,ok,ok,ok,ok,ok,ok,ok,eeg,ok,No participants.tsv file,01-04-2024
+ds000117,ok,ok,ok,1/96,1/96,0/96,1/96,meg,,,12-19-2023
+ds004120,ok,ok,ok,50/131,33/131,33/131,33/131,eeg,,,12-19-2023
+ds004119,ok,ok,ok,0/22,0/22,0/22,0/22,eeg,,,08-22-2023
+ds004117,ok,ok,ok,ok,ok,74/85,ok,eeg,ok,,02-21-2024
+ds004194,ok,ok,ok,166/176,160/176,0/176,166/176,ieeg,,,02-21-2024
+ds004264,ok,ok,ok,ok,ok,ok,ok,eeg,ok,,10-02-2023
+ds004446,ok,ok,ok,129/230,129/230,129/230,129/230,eeg,,EGI data. Should run again.,01-17-2024
+ds002722,ok,ok,ok,ok,81/82,81/82,ok,eeg,ok,,02-21-2024
+ds004457,ok,ok,ok,ok,ok,ok,ok,ieeg,ok,,01-24-2024
+ds004505,ok,ok,ok,ok,ok,ok,ok,eeg,ok,,01-11-2024
+ds002885,-1,-1,-1,-1,-1,-1,-1,meg,,Done. Will not fix. NEMAR.json up to date.,08-05-2024
+ds004019,ok,ok,ok,ok,ok,ok,ok,eeg,ok,,06-29-2023
+ds004580,ok,ok,ok,ok,ok,ok,ok,eeg,ok,,11-27-2023
+ds003944,ok,ok,ok,ok,ok,79/80,ok,eeg,ok,,01-17-2024
+ds004279,ok,ok,ok,ok,4/60,4/60,4/60,eeg,,,10-02-2023
+ds004532,ok,ok,ok,ok,ok,ok,ok,eeg,ok,,02-21-2024
+ds004346,ok,ok,ok,ok,ok,ok,ok,meg,ok,,06-29-2023
+ds003816,ok,ok,ok,317/576,317/576,317/576,362/576,eeg,,Submitted batch job 26660542,12-19-2023
+ds004572,ok,ok,ok,514/516,512/516,512/516,512/516,eeg,ok,,10-02-2023
+ds004696,ok,ok,ok,5/8,5/8,0/8,5/8,ieeg,,,10-02-2023
+ds004745,ok,0/6,0/6,0/6,0/6,0/6,ok,eeg,,Done. NEMAR.json updated. Location not available.,08-13-2024
+ds004460,ok,ok,ok,7/40,5/40,2/40,5/40,eeg,,,09-19-2023
+ds004075,ok,ok,ok,ok,114/115,114/115,114/115,eeg,ok,Corrupted file need to be ignored. See https://github.com/sccn/NEMAR-pipeline/issues/84,08-28-2024
+ds004447,ok,ok,ok,324/418,324/418,324/418,324/418,eeg,,,01-17-2024
+ds004295,ok,ok,ok,ok,ok,ok,ok,eeg,ok,,06-26-2023
+ds003519,ok,ok,ok,ok,ok,ok,ok,eeg,ok,,01-24-2024
+ds004107,ok,ok,ok,11/76,0/76,0/76,11/76,meg,,Warning. Work in local mode. Check for batch mode.	,08-21-2024
+ds003458,ok,ok,ok,ok,ok,ok,ok,eeg,ok,,01-24-2024
+ds004502,ok,ok,ok,ok,37/38,37/38,37/38,eeg,ok,,02-22-2024
+ds002724,ok,ok,ok,ok,ok,ok,ok,eeg,ok,,01-24-2024
+ds003004,ok,ok,ok,1/34,1/34,1/34,ok,eeg,,,02-21-2024
+ds003104,ok,ok,ok,0/1,0/1,0/1,0/1,meg,,,10-18-2023
+ds004200,ok,ok,ok,ok,ok,ok,ok,eeg,ok,,11-27-2023
+ds002791,ok,ok,ok,0/92,0/92,0/92,0/92,eeg,,,02-21-2024
+ds004015,ok,ok,ok,ok,ok,ok,ok,eeg,ok,,01-24-2024
+ds004262,ok,ok,ok,ok,ok,ok,ok,eeg,ok,,01-24-2024
+ds002712,-1,-1,-1,-1,-1,-1,-1,meg,,Done. Will not fix. NEMAR.json up to date.,07-31-2023
+ds004520,ok,ok,ok,0/33,0/33,0/33,ok,eeg,,,01-17-2024
+ds004444,ok,ok,ok,343/465,341/465,341/465,341/465,eeg,,,12-21-2023
+ds002723,ok,ok,ok,ok,ok,ok,ok,eeg,ok,,01-24-2024
+ds004017,ok,ok,ok,ok,ok,0/63,ok,eeg,,,01-17-2024
+ds004595,ok,ok,ok,ok,ok,ok,ok,eeg,ok,,11-27-2023
+ds004626,ok,ok,ok,ok,29/52,29/52,29/52,eeg,,,10-01-2023
+ds003751,ok,ok,ok,36/38,36/38,36/38,ok,eeg,ok,,02-22-2024
+ds004475,ok,ok,ok,ok,1/30,1/30,1/30,eeg,,,10-02-2023
+ds000246,ok,ok,ok,0/2,0/2,0/2,ok,meg,,,01-17-2024
+ds005505,ok,ok,0/136,ok,ok,ok,ok,eeg,,,10-02-2024
+ds004515,ok,ok,ok,ok,ok,ok,ok,eeg,ok,,11-27-2023
+ds004563,ok,ok,ok,ok,89/119,89/119,89/119,eeg,,,11-27-2023
+ds003421,ok,ok,ok,10/80,4/80,4/80,4/80,eeg,,,10-01-2023
+ds002158,ok,ok,ok,111/117,111/117,111/117,ok,eeg,ok,Good pipeline example,01-12-2024
+ds005522,ok,ok,ok,93/176,90/176,0/176,91/176,ieeg,,,09-27-2024
+ds004483,-1,-1,-1,-1,-1,-1,-1,meg,,Done. Will not fix. NEMAR.json up to date.,10-03-2023
+ds002680,ok,ok,ok,ok,ok,ok,ok,eeg,ok,,01-24-2024
+ds004624,ok,ok,ok,ok,2/12,0/12,2/12,ieeg,,"Rerun, see issue https://github.com/MaxvandenBoom/matmef/issues/7",08-26-2024
+ds004278,ok,ok,ok,0/30,0/30,0/30,ok,meg,,Warning. Work in local mode. Check for batch mode.,08-21-2024
+ds003739,ok,ok,ok,ok,ok,ok,ok,eeg,ok,,01-24-2024
+ds003774,ok,ok,ok,202/240,202/240,202/240,ok,eeg,ok,,02-21-2024
+ds003194,ok,ok,ok,ok,ok,ok,ok,eeg,ok,,01-24-2024
+ds004356,ok,ok,ok,23/24,3/24,2/24,3/24,eeg,,Rerun with 120G of memory for each datarun,05-10-2024
+ds004367,ok,ok,ok,ok,33/40,33/40,33/40,eeg,ok,,10-01-2023
+ds004123,ok,ok,ok,ok,20/30,20/30,20/30,eeg,,,10-01-2023
+ds004369,ok,ok,ok,ok,36/41,36/41,ok,eeg,ok,,02-22-2024
+ds004381,ok,ok,ok,ok,320/333,320/333,ok,eeg,ok,,01-17-2024
+ds003805,ok,ok,ok,0/1,0/1,0/1,ok,eeg,,,08-22-2023
+ds004196,ok,ok,ok,ok,ok,ok,ok,eeg,ok,,11-27-2023
+ds002338,ok,ok,ok,60/85,60/85,60/85,60/85,eeg,,,09-12-2024
+ds004022,ok,ok,ok,ok,ok,ok,ok,eeg,ok,,11-27-2023
+ds005506,ok,ok,0/150,149/150,147/150,147/150,149/150,eeg,,,12-11-2024
+ds003838,ok,ok,ok,ok,127/130,127/130,127/130,eeg,ok,,10-02-2023
+ds004579,ok,ok,ok,ok,138/139,138/139,138/139,eeg,ok,,11-27-2023
+ds004603,ok,ok,ok,ok,0/37,0/37,ok,eeg,,,10-01-2023
+ds004752,ok,ok,ok,ok,ok,ok,ok,ieeg,ok,,10-01-2023
+ds003768,ok,ok,ok,ok,ok,ok,ok,eeg,ok,,01-24-2024
+ds003947,ok,ok,ok,ok,ok,7/61,ok,eeg,,,01-17-2024
+ds004229,-1,-1,-1,-1,-1,-1,-1,meg,,Done. Will not fix. NEMAR.json up to date.,07-31-2023
+ds005507,ok,ok,0/184,181/184,179/184,178/184,178/184,eeg,,,12-12-2024
+ds004040,ok,ok,ok,ok,ok,ok,ok,eeg,ok,,01-24-2024
+ds004477,ok,ok,ok,0/9,0/9,0/9,0/9,eeg,,,02-21-2024
+ds001785,ok,ok,ok,52/54,44/54,44/54,ok,eeg,ok,,09-01-2023
+ds003766,ok,ok,ok,14/124,11/124,11/124,14/124,eeg,,,01-10-2024
+ds004276,-1,-1,-1,-1,-1,-1,-1,meg,,Done. Will not fix. NEMAR.json up to date.,07-31-2023
+ds005511,ok,379/381,379/381,374/381,359/381,358/381,363/381,eeg,ok,,12-17-2024
+ds004152,ok,ok,ok,ok,ok,ok,ok,eeg,ok,,01-24-2024
+ds001971,ok,ok,ok,ok,ok,ok,ok,eeg,ok,participants.tsv file has 'sex' column instead of 'gender',02-22-2024
+ds002718,ok,ok,18/19,18/19,18/19,18/19,18/19,eeg,ok,,01-24-2024
+ds003352,-1,-1,-1,-1,-1,-1,-1,meg,,Done. Will not fix. NEMAR.json up to date.,07-31-2023
+ds003626,ok,ok,ok,ok,ok,ok,ok,eeg,ok,,06-29-2023
+ds002691,ok,ok,ok,ok,ok,ok,ok,eeg,ok,,01-24-2024
+ds003690,ok,ok,ok,ok,ok,ok,ok,eeg,ok,,01-24-2024
+ds002814,ok,ok,ok,ok,ok,ok,ok,eeg,ok,,01-24-2024
+ds003645,ok,ok,ok,ok,ok,ok,ok,meg,ok,,01-18-2024
+ds004551,ok,ok,ok,46/125,46/125,0/125,46/125,ieeg,,,12-19-2023
+ds001784,ok,24/30,24/30,24/30,8/30,8/30,ok,eeg,,Done with NEMAR warning about channel locations.		,02-26-2024
+ds003922,-1,-1,-1,-1,-1,-1,-1,meg,,Done. Will not fix. NEMAR.json up to date.,12-19-2023
+ds003810,ok,ok,ok,ok,ok,ok,0/50,eeg,,,10-01-2023
+ds004306,-1,-1,-1,-1,-1,-1,-1,eeg,,Done. Will not fix. NEMAR.json up to date.,10-03-2023
+ds004642,ok,ok,ok,ok,ok,0/10,ok,ieeg,,,10-25-2023
+ds003478,ok,ok,ok,ok,ok,ok,ok,eeg,ok,,01-24-2024
+ds004100,-1,-1,-1,-1,-1,-1,-1,ieeg,,Done. NEMAR.json updated. ,07-31-2023
+ds003969,ok,ok,ok,ok,ok,ok,0/392,eeg,,,06-29-2023
+ds004000,ok,ok,ok,0/86,0/86,0/86,ok,eeg,,Error: epoched data was given to cleanraw,05-09-2024
+ds003061,ok,ok,ok,ok,ok,ok,ok,eeg,ok,,01-24-2024
+ds003638,ok,ok,ok,ok,ok,ok,ok,eeg,ok,,11-02-2023
+ds004521,ok,ok,ok,0/34,0/34,0/34,ok,eeg,,,01-17-2024
+ds002761,-1,-1,-1,-1,-1,-1,-1,meg,,Done. Will not fix. NEMAR.json up to date.,07-31-2023
+ds001849,ok,ok,ok,ok,ok,ok,ok,eeg,ok,Failed to generate dataset-level quality summary due to missing participants.tsv file,01-04-2024
+ds003844,ok,ok,ok,ok,37/38,0/38,37/38,ieeg,,,08-16-2023
+ds003039,ok,ok,ok,ok,ok,ok,ok,eeg,ok,,02-21-2024
+ds004706,-1,-1,-1,-1,-1,-1,-1,eeg,,Done. NEMAR.json updated. >1Tb too large.,08-12-2024
+ds004252,ok,ok,ok,ok,ok,ok,ok,eeg,ok,,06-29-2023
+ds004448,ok,ok,ok,155/280,155/280,155/280,156/280,eeg,,,12-19-2023
+ds003602,ok,ok,ok,674/699,0/699,0/699,25/699,eeg,,,10-01-2023
+ds003380,ok,ok,ok,ok,ok,0/1,ok,eeg,,,08-16-2023
+ds004018,ok,ok,ok,ok,ok,ok,ok,eeg,ok,,06-26-2023
+ds004080,ok,ok,ok,57/117,56/117,0/117,57/117,ieeg,,,01-17-2024
+ds004324,ok,ok,ok,ok,ok,ok,ok,eeg,ok,,10-01-2023
+ds003887,ok,ok,ok,ok,ok,ok,ok,eeg,ok,,06-29-2023
+ds003775,ok,ok,ok,ok,ok,ok,0/153,eeg,,"
+",07-03-2023
+ds004106,ok,ok,ok,0/29,0/29,0/29,0/29,eeg,,,08-22-2023
+ds003688,ok,ok,ok,101/107,101/107,0/107,101/107,ieeg,,,02-21-2024
+ds002721,ok,ok,ok,ok,ok,ok,ok,eeg,ok,,08-16-2023
+ds003655,ok,ok,ok,ok,155/156,155/156,ok,eeg,ok,,02-21-2024
+ds004395,-1,-1,-1,-1,-1,-1,-1,eeg,,Done. NEMAR.json updated. 8Tb dataset too large to process.,08-12-2024
+ds004147,ok,ok,ok,ok,ok,ok,ok,eeg,ok,,01-24-2024
+ds003483,ok,ok,ok,24/41,0/41,0/41,24/41,meg,,Warning. Work in local mode. Check for batch mode.	,08-21-2024
+ds003555,ok,ok,ok,ok,ok,ok,24/30,eeg,,,06-29-2023
+ds005520,ok,ok,ok,46/69,46/69,22/69,46/69,eeg,,,09-27-2024
+ds002778,ok,ok,ok,ok,ok,ok,ok,eeg,ok,,01-24-2024
+ds004661,ok,ok,ok,ok,ok,ok,0/17,eeg,,,10-01-2023
+ds003885,ok,ok,ok,ok,ok,ok,ok,eeg,ok,,06-29-2023
+ds004657,ok,ok,ok,113/119,111/119,111/119,111/119,eeg,ok,,10-02-2023
+ds005523,-1,-1,-1,-1,-1,-1,-1,ieeg,,,09-27-2024
+ds003498,ok,ok,ok,ok,ok,0/385,ok,ieeg,,,08-17-2023
+ds003522,ok,ok,ok,ok,ok,ok,ok,eeg,ok,,01-24-2024
+ds005508,ok,ok,0/324,323/324,314/324,314/324,315/324,eeg,,,12-14-2024
+ds003710,ok,ok,ok,ok,ok,ok,ok,eeg,ok,,06-29-2023
+ds003343,ok,ok,ok,ok,ok,ok,ok,eeg,ok,,01-24-2024
+ds003708,ok,ok,ok,0/1,0/1,0/1,0/1,ieeg,,,01-17-2024
+ds002001,ok,ok,ok,0/59,0/59,0/59,1/59,meg,,,08-12-2024
+ds005510,ok,ok,0/135,ok,133/135,133/135,ok,eeg,,,10-04-2024
+ds004067,ok,ok,ok,49/84,38/84,38/84,44/84,eeg,,"Pending Response
+contact authors. Badly formatted BIDS, subject 71 marker files. Status: pending.
+",08-06-2024
+ds005509,ok,ok,ok,329/330,323/330,323/330,324/330,eeg,ok,,12-16-2024
+ds003078,ok,ok,ok,ok,ok,0/72,ok,ieeg,,,08-16-2023
+ds003801,ok,ok,ok,ok,ok,ok,ok,eeg,ok,,02-21-2024
+ds002578,ok,ok,ok,1/2,0/2,0/2,ok,eeg,,,08-15-2024
+ds003029,ok,ok,ok,87/106,87/106,0/106,89/106,ieeg,,,02-21-2024
+ds001810,ok,ok,ok,ok,ok,ok,ok,eeg,ok,,10-02-2023
+ds003620,ok,ok,ok,ok,ok,ok,ok,eeg,ok,"Issue tracked by https://github.com/sccn/NEMAR-pipeline/issues/29
+
+Ignored subject 36 which has corrupted data.",07-31-2023
+ds004660,ok,ok,ok,ok,ok,ok,ok,eeg,ok,Bad participants.tsv file,10-01-2023

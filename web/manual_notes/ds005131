@@ -1,0 +1,1 @@
+Most subjects don't have channel information since channel names are numbered, not 10-20. Yet some has channels in 10-20 hence probably looked up by bids import. See sub-128/ses-1 (standard name) vs sub-134/ses-2 (numbered name) for example

@@ -1,0 +1,1 @@
+Add Warning to NEMAR file. Warning: data is epoched, so some visualization function are not functional. Note that the data is marked as "raw" so it is not technically BIDS compliant because raw EEG data is continuous.

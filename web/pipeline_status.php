@@ -40,9 +40,54 @@ $handler = 'http://' . $_SERVER['HTTP_HOST'] . $directory_self . 'update.manual.
     <div class="container">
         <p class="text-center lead" id="listalldescription">Status of running NEMAR pipeline on Openneuro datasets</p>
     </div>
-                <br>
-<br>
+    <br>
+ .  <br>
+    <div class="container">
+        <p class="text" id="ok_stats"></p>
+        <p class="text" id="manual_note_stats"></p>
+    </div>
     <div class="container" id="statusTable">
+    </div>
+    <!-- Job submission Modal -->
+    <div class="modal fade" id="dsRun" data-backdrop="static" tabindex="-1" role="dialog" aria-labelledby="dsRun" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="dsLogTitle">Run pipeline</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+		    <p id="dsrun_dsnumber"></p>
+                    <form method=POST id='Activate' name='Activate' enctype='multipart/form-data'>
+                        <div class="form-group row">
+                            <label for="memory" class="col-sm-2 col-form-label">Memory:</label>
+			    <div class="col-sm-10">
+			        <input type="text" class="form-control" id="memory" name="memory" value="32">
+			    </div>
+                        </div>
+                        <div class="form-group row">
+                            <label for="cpus" class="col-sm-2 col-form-label">CPUs:</label>
+			    <div class="col-sm-10">
+			        <input type="text" class="form-control" id="cpus" name="cpus" value="1">
+			    </div>
+                        </div>
+                        <div class="form-group row">
+                            <label for="ctffunc" class="col-sm-2 col-form-label">CTF function:</label>
+			    <div class="col-sm-10">
+				<select class="form-control" id="ctffunc" name="crffunc">
+				  <option selected>fileio</option>
+				  <option>ctfimport</option>
+				</select>
+			    </div>
+                        </div>
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+			<button type="button" class="btn btn-primary" id="runPipelineBtn">Run pipeline</button> <!--type="submit"-->
+                    </form>
+		</div>
+	    </div>
+	</div>
     </div>
     <!-- Edit Modal -->
     <div class="modal fade" id="dsLogs" data-backdrop="static" tabindex="-1" role="dialog" aria-labelledby="dsLogs" aria-hidden="true">
@@ -179,157 +224,200 @@ $handler = 'http://' . $_SERVER['HTTP_HOST'] . $directory_self . 'update.manual.
 
     <script>
         $(document).ready(function() {
-			$.ajaxSetup ({
-			// Disable caching of AJAX responses
-			cache: false
-			});
+	    $.ajaxSetup ({
+	      // Disable caching of AJAX responses
+	      cache: false
+	    });
 
-				$("#statusTable").load('pipeline_status_all.html', function() {
-				$('table').find('tr').each(function(){ 	
-				$(this).find('th').eq(-1).after('<th>log_files</th>'); 	
-				$(this).find('td').eq(-1).after('<td>ROW</td>'); 
-				});
+            $("#statusTable").load('pipeline_status_all.html', function() {
+		    $('table').find('tr').each(function(){ 	
+			$(this).find('th').eq(-1).after('<th>log_files</th>'); 	
+			$(this).find('td').eq(-1).after('<td>ROW</td>'); 
+		    });
 
-				$('table').DataTable( {
-				"fixedHeader": true,
-				"paging": false,
-				"order": [[ 0, "asc"]],
-				//"columnDefs": [{"orderable": false, "targets":[3,8]}]
-				});
-				var dsnumber = "";
-				$('tbody > tr').each(function(index) {
-				var first_td = $(this).children().first();
-				var dsnumber = first_td.html();
-				first_td.html("<a data-toggle='modal' data-target='#dsLogs' data-dsnumber='" + dsnumber + "'>" + dsnumber + "</a>");
-				var last_td = $(this).children().last();
-				last_td.html("<a data-toggle='modal' class='text-primary' data-target='#dsMatlabLogs' data-dsnumber='" + dsnumber + "' data-file='matlab'>MATLAB</a><br>");
-				last_td.append("<a data-toggle='modal' class='text-success' data-target='#dsIndLogs' data-dsnumber='" + dsnumber + "' data-file='ind'>Ind status</a><br>");
-				last_td.append("<a data-toggle='modal' class='text-danger' data-target='#dsMatlabLogs' data-dsnumber='" + dsnumber + "' data-file='sbatcherr'>Batch .err</a><br>");
-				last_td.append("<a data-toggle='modal' class='text-info' data-target='#dsMatlabLogs' data-dsnumber='" + dsnumber + "' data-file='sbatchout'>Batch .out</a><br>");
-				last_td.append("<a data-toggle='modal' class='text-warning' data-target='#noteEditModal' data-dsnumber='" + dsnumber + "' data-file='manualnote'>Edit note</a>");
-				var manual_note_col = $(this).children().eq(15);
-				manual_note_col.attr('id','manual_note_' + dsnumber);
-				$.post('get_file.php', { dsnumber: dsnumber, file: 'manualnote' }, function(result) { 
-					manual_note_col.text(result);
-				});
-				});
+		    $('table').DataTable( {
+			"fixedHeader": true,
+			"paging": false,
+			"order": [[ 0, "asc"]],
+			//"columnDefs": [{"orderable": false, "targets":[3,8]}]
+		    });
+		    var dsnumber = "";
+		    $('tbody > tr').each(function(index) {
+			var first_td = $(this).children().first();
+			var dsnumber = first_td.html();
+			first_td.html("<a data-toggle='modal' data-target='#dsLogs' data-dsnumber='" + dsnumber + "'>" + dsnumber + "</a>");
+			var last_td = $(this).children().last();
+			last_td.html("<a data-toggle='modal' class='text-primary' data-target='#dsMatlabLogs' data-dsnumber='" + dsnumber + "' data-file='matlab'>MATLAB</a><br>");
+			last_td.append("<a data-toggle='modal' class='text-success' data-target='#dsIndLogs' data-dsnumber='" + dsnumber + "' data-file='ind'>Ind status</a><br>");
+			last_td.append("<a data-toggle='modal' class='text-danger' data-target='#dsMatlabLogs' data-dsnumber='" + dsnumber + "' data-file='sbatcherr'>Batch .err</a><br>");
+			last_td.append("<a data-toggle='modal' class='text-info' data-target='#dsMatlabLogs' data-dsnumber='" + dsnumber + "' data-file='sbatchout'>Batch .out</a><br>");
+			last_td.append("<a data-toggle='modal' class='text-warning' data-target='#noteEditModal' data-dsnumber='" + dsnumber + "' data-file='manualnote'>Edit note</a><br>");
+			last_td.append("<a data-toggle='modal' class='text-secondary' data-target='#dsRun' data-dsnumber='" + dsnumber + "' data-file='nemarjson'>Run pipeline</a>");
+			var manual_note_col_number = 10;
+			var manual_note_col = $(this).children().eq(manual_note_col_number);
+			manual_note_col.attr('id','manual_note_' + dsnumber);
+			manual_note_col.attr('class','manual_note');
 
+			var debug_note_col = $(this).children().eq(manual_note_col_number-1);
+			debug_note_col.attr('id','debug_note_' + dsnumber);
+			debug_note_col.attr('class','debug_note');
+			$.post('get_file.php', { dsnumber: dsnumber, file: 'manualnote' }, function(result) { 
+			     manual_note_col.text(result);
 			});
-			$('#dsLogs').on('show.bs.modal', function (event) {
-				var clicked = $(event.relatedTarget);
-				var dsnumber = clicked.data('dsnumber');
-				var modal = $(this);
-				modal.find('#nemarpath').html('<a href="https://nemar.org/dataexplorer/detail?dataset_id=' + dsnumber + '">View on NEMAR</a>');
-				modal.find('#logDir').val('/expanse/projects/nemar/openneuro/processed/' + dsnumber + '/logs');
-				modal.find('#indLogDir').val('/expanse/projects/nemar/openneuro/processed/' + dsnumber + '/logs/eeg_logs');
-				modal.find('#note').val('/expanse/projects/nemar/openneuro/processed/' + dsnumber + '/logs/debug/manual_debug_note');
-				modal.find('#sbatch').val('/expanse/projects/nemar/openneuro/processed/logs/' + dsnumber + 'sbatch');
-				modal.find('#nemarjson').val('/expanse/projects/nemar/openneuro/processed/' + dsnumber + '/code/nemar.json');
-			});
-			$('#dsMatlabLogs').on('show.bs.modal', function (event) {
-				var clicked = $(event.relatedTarget);
-				var dsnumber = clicked.data('dsnumber');
-				var file = clicked.data('file');
-				var modal = $(this);
-				$.post('get_file.php', { dsnumber: dsnumber, file: file }, function(result) { 
-					modal.find('#logcontent').val(result);
-				});
-			});
-			$('#dsIndLogs').on('show.bs.modal', function (event) {
-				var clicked = $(event.relatedTarget);
-				var dsnumber = clicked.data('dsnumber');
-				var file = clicked.data('file');
-				console.log(file);
-				var modal = $(this);
-				$.post('get_file.php', { dsnumber: dsnumber, file: file }, function(result) { 
-					if (file === "ind") {
-						var result = csv_string_to_table(result, dsnumber);
-					}
-					modal.find('#indlogtable').html(result);
-				});
-			});
-			$('#noteEditModal').on('show.bs.modal', function (event) {
-				var clicked = $(event.relatedTarget);
-				var dsnumber = clicked.data('dsnumber');
-				var file = clicked.data('file');
-				var modal = $(this);
-				$.post('get_file.php', { dsnumber: dsnumber, file: file }, function(result) { 
-					modal.find('#notes').val(result);
-				});
-				$("#noteEditDsnumber").val(dsnumber);
-			});
-			$('#noteEditModalSubmit').on('click', function (event) {
-				var clicked = $(event.relatedTarget);
-				var dsnumber = $('#noteEditDsnumber').val();
-				var notes = $('#notes').val();
-				var modal = $('#noteEditModal');
-				$('#manual_note_' + dsnumber).text(notes);
-				$.post('update.manual.notes.php', { dsnumber: dsnumber, notes: notes }, function(result) { 
-					console.log(result);
-				});
-			});
+		    });
+		    getTableStatistics();
+
+	    });
+	    $('#dsLogs').on('show.bs.modal', function (event) {
+		var clicked = $(event.relatedTarget);
+		var dsnumber = clicked.data('dsnumber');
+		var modal = $(this);
+		modal.find('#nemarpath').html('<a href="https://nemar.org/dataexplorer/detail?dataset_id=' + dsnumber + '">View on NEMAR</a>');
+		modal.find('#logDir').val('/expanse/projects/nemar/openneuro/processed/' + dsnumber + '/logs');
+		modal.find('#indLogDir').val('/expanse/projects/nemar/openneuro/processed/' + dsnumber + '/logs/eeg_logs');
+		modal.find('#note').val('/expanse/projects/nemar/openneuro/processed/' + dsnumber + '/logs/debug/manual_debug_note');
+		modal.find('#sbatch').val('/expanse/projects/nemar/openneuro/processed/logs/' + dsnumber + '/' + dsnumber + '_sbatch');
+		modal.find('#nemarjson').val('/expanse/projects/nemar/openneuro/processed/' + dsnumber + '/code/nemar.json');
+	    });
+	    $('#dsMatlabLogs').on('show.bs.modal', function (event) {
+		var clicked = $(event.relatedTarget);
+		var dsnumber = clicked.data('dsnumber');
+		var file = clicked.data('file');
+		var modal = $(this);
+		$.post('get_file.php', { dsnumber: dsnumber, file: file }, function(result) { 
+		    modal.find('#logcontent').val(result);
+		});
+	    });
+	    $('#dsIndLogs').on('show.bs.modal', function (event) {
+		var clicked = $(event.relatedTarget);
+		var dsnumber = clicked.data('dsnumber');
+		var file = clicked.data('file');
+		console.log(file);
+		var modal = $(this);
+		$.post('get_file.php', { dsnumber: dsnumber, file: file }, function(result) { 
+		    if (file === "ind") {
+		        var result = csv_string_to_table(result, dsnumber);
+		    }
+		    modal.find('#indlogtable').html(result);
+		});
+	    });
+	    $('#noteEditModal').on('show.bs.modal', function (event) {
+		var clicked = $(event.relatedTarget);
+		var dsnumber = clicked.data('dsnumber');
+		var file = clicked.data('file');
+		var modal = $(this);
+		$.post('get_file.php', { dsnumber: dsnumber, file: file }, function(result) { 
+		    modal.find('#notes').val(result);
+		});
+		$("#noteEditDsnumber").val(dsnumber);
+	    });
+	    $('#noteEditModalSubmit').on('click', function (event) {
+		var clicked = $(event.relatedTarget);
+		var dsnumber = $('#noteEditDsnumber').val();
+		var notes = $('#notes').val();
+		var modal = $('#noteEditModal');
+		$('#manual_note_' + dsnumber).text(notes);
+		$.post('update.manual.notes.php', { dsnumber: dsnumber, notes: notes }, function(result) { 
+		    console.log(result);
+		});
+	    });
+	    $('#dsRun').on('show.bs.modal', function (event) {
+		var clicked = $(event.relatedTarget);
+		var dsnumber = clicked.data('dsnumber');
+		$('#dsrun_dsnumber').text(dsnumber);
+		var modal = $(this);
+		//$.post('get_file.php', { dsnumber: dsnumber, file: file }, function(result) { 
+		    //modal.find('#notes').val(result);
+		//});
+	    });
+	    $('#runPipelineBtn').on('click', function (event) {
+		var clicked = $(event.relatedTarget);
+		var dsnumber = $('#dsrun_dsnumber').text();
+		var memory = $('#memory').val();
+		var cpus = $('#cpus').val();
+		var ctffunc = $('#ctffunc').val();
+		$.post('run.pipeline.php', { dsnumber: dsnumber, memory: memory, cpus: cpus, ctffunc: ctffunc }, function(result) { 
+		    console.log(result);
+		});
+	    });
         } );
-		function copyText(type) {
-		// Get the text field
-		var copyText = document.getElementById(type);
+	function copyText(type) {
+	  // Get the text field
+	  var copyText = document.getElementById(type);
 
-		// Select the text field
-		copyText.select();
-		copyText.setSelectionRange(0, 99999); // For mobile devices
+	  // Select the text field
+	  copyText.select();
+	  copyText.setSelectionRange(0, 99999); // For mobile devices
 
-		// Copy the text inside the text field
-		navigator.clipboard.writeText(copyText.value);
-		} 
+	   // Copy the text inside the text field
+	  navigator.clipboard.writeText(copyText.value);
+	} 
 
-		function csv_string_to_table(csv_string, dsnumber) {
-			var rows = csv_string.trim().split(/\r?\n|\r/); // Regex to split/separate the CSV rows
-			var table = '';
-			var table_rows = '';
-			var table_header = '';
+	function csv_string_to_table(csv_string, dsnumber) {
+	    var rows = csv_string.trim().split(/\r?\n|\r/); // Regex to split/separate the CSV rows
+	    var table = '';
+	    var table_rows = '';
+	    var table_header = '';
 
-			rows.forEach(function(row, row_index) {
-			var table_columns = '';
-			var columns = row.split(','); // split/separate the columns in a row
-			columns.forEach(function(column, column_index) {
-				if (row_index == 0) {
-					table_columns += '<th>' + column + '</th>';
+	    rows.forEach(function(row, row_index) {
+		var table_columns = '';
+		var columns = row.split(','); // split/separate the columns in a row
+		columns.forEach(function(column, column_index) {
+			if (row_index == 0) {
+				table_columns += '<th>' + column + '</th>';
+			}
+			else {
+				if (column_index == 0) {
+					var filename = column.split('.')[0];
+					//column = "<a data-toggle='modal' class='text' data-target='#dsMatlabLogs' data-dsnumber='" + dsnumber + "' data-file='" + filename + "'>" + filename + "</a>";
+					column = "<a class='text-secondary' onclick=\"showIndLogContent('" + dsnumber + "', '" + filename + "')\">" + filename + "</a>";
+					table_columns += '<td>' + column + '</td>';
 				}
 				else {
-					if (column_index == 0) {
-						var filename = column.split('.')[0];
-						//column = "<a data-toggle='modal' class='text' data-target='#dsMatlabLogs' data-dsnumber='" + dsnumber + "' data-file='" + filename + "'>" + filename + "</a>";
-						column = "<a class='text-secondary' onclick=\"showIndLogContent('" + dsnumber + "', '" + filename + "')\">" + filename + "</a>";
-						table_columns += '<td>' + column + '</td>';
-					}
-					else {
-						table_columns += '<td>' + column + '</td>';
-					}
+					table_columns += '<td>' + column + '</td>';
 				}
-			});
-			if (row_index == 0) {
-				table_header += '<tr>' + table_columns + '</tr>';
-			} else {
-				table_rows += '<tr>' + table_columns + '</tr>';
 			}
-			});
-
-			table += '<table>';
-			table += '<thead>';
-				table += table_header;
-			table += '</thead>';
-			table += '<tbody>';
-				table += table_rows;
-			table += '</tbody>';
-			table += '</table>';
-
-			return table;
+		});
+		if (row_index == 0) {
+		    table_header += '<tr>' + table_columns + '</tr>';
+		} else {
+		    table_rows += '<tr>' + table_columns + '</tr>';
 		}
-		function showIndLogContent(dsnumber, logfile) {
-			$.post('get_file.php', { dsnumber: dsnumber, file: logfile }, function(result) { 
-				$('#indlogcontent').val(result);
-			});
+	    });
 
-		}
+	    table += '<table>';
+		table += '<thead>';
+		    table += table_header;
+		table += '</thead>';
+		table += '<tbody>';
+		    table += table_rows;
+		table += '</tbody>';
+	    table += '</table>';
+
+	    return table;
+	}
+	function showIndLogContent(dsnumber, logfile) {
+		$.post('get_file.php', { dsnumber: dsnumber, file: logfile }, function(result) { 
+		    $('#indlogcontent').val(result);
+		});
+
+	}
+	function getTableStatistics() {
+	    var ok_counter = 0;
+	    var manual_note_counter = 0;
+	    $(".debug_note").each(function(note) {
+		if ($(this).text() == "ok")
+		    ok_counter += 1;
+	    });
+	    $(".manual_note").each(function(note) {
+		if ($(this).text())
+		    manual_note_counter += 1;
+	    });
+	    console.log(ok_counter);
+	    console.log(manual_note_counter);
+	    $("#ok_stats").text("Number of preprocessed datasets: " + ok_counter);
+	    $("#manual_note_stats").text("Number of datasets with note: " + manual_note_counter);
+	}
     </script>
     </body>
 </html>

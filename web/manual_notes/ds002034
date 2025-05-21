@@ -1,0 +1,17 @@
+nemar_dataqual
+MATLAB:histcounts:expectedInteger
+Expected input number 2, m, to be integer-valued.
+Error using histcounts
+Expected input number 2, m, to be integer-valued.
+
+Error in histcounts (line 139)
+            validateattributes(in,{'numeric','logical'},{'integer', 'positive'}, ...
+
+Error in nemar_dataqual/generate_figure (line 156)
+        [counts, edges] = histcounts(linenoise_magn, bins)
+
+Error in nemar_dataqual (line 76)
+    generate_figure(dsnumber, numel(ALLEEG), goodChansPercentRaw, goodDataPercentRaw, goodICAPercentRaw, linenoise_magn, maxCount);
+
+Error in process_all_dataqual (line 14)
+        nemar_dataqual(dsnumber);
