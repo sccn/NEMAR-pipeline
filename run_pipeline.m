@@ -228,7 +228,7 @@ function run_pipeline(dsnumber, varargin)
     % run dataset-level report after all individual recording processing finish
     if opt.dataqual
         fprintf('Running data quality check\n');
-        nemar_dataqual(dsnumber, STUDY, ALLEEG);
+        nemar_dataqual(dsnumber, opt.mergeset, STUDY, ALLEEG);
     end
     eeg_logdir = fullfile(opt.logdir, 'eeg_logs');
     study_status_tbl = [];

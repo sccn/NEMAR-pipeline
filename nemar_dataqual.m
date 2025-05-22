@@ -35,9 +35,13 @@ function [STUDY, ALLEEG] = nemar_dataqual(dsnumber, mergeset, STUDY, ALLEEG, out
                     filepath = ALLEEG(i-1).filepath;
 
                     EEG = pop_loadset('filename', filename, 'filepath', filepath, 'loadmode', 'info');
-                    [report, maxCount] = get_dataqual_status(EEG);
-                    reports = [reports report];
-                    maxCounts = [maxCounts maxCount];
+                    try 
+                        [report, maxCount] = get_dataqual_status(EEG);
+                        reports = [reports report];
+                        maxCounts = [maxCounts maxCount];
+                    catch ME1
+                        warning('Cannot get data quality status %s', filename);
+                    end
 
                     % load new subject
                     cur_subject = subjects{i};

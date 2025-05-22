@@ -53,6 +53,7 @@ def write_nemar_json(df, is_processed, latest_date, processed_dir=processed_dir)
         os.mkdir(code_dir)
         try:
             # os.chmod(code_dir, 0o774) # add write permission to group
+            completed = subprocess.run(['chmod', '-R 776', code_dir], capture_output=True)
             os.system(f'chmod -R 776 {code_dir}') # add write permission to group
         except:
             note = f'Cannot change permission for code dir'
@@ -81,7 +82,8 @@ def write_nemar_json(df, is_processed, latest_date, processed_dir=processed_dir)
         note += "\n" + f'Cannot update nemar.json'
     try:
         # os.chmod(status_file, 0o664) # add write permission to group
-        os.system(f'chmod -R 776 {status_file}') # add write permission to group
+        completed = subprocess.run(['chmod', '-R 776', status_file], capture_output=True)
+        # os.system(f'chmod -R 776 {status_file}') # add write permission to group
     except:
         note += "\n" + f'Cannot change permission for nemar.json'
     return note
@@ -154,7 +156,8 @@ def append_debug(df, processing, processed_dir=processed_dir):
                     # notes = get_known_errors(matlab_log, batcherr_log) # No need to get known_errors anymore because there's no central log file 
                 file.write(notes)
             try:
-                os.system(f'chmod -R 776 {debug_note}') # add write permission to group
+                completed = subprocess.run(['chmod', '-R 776', debug_note], capture_output=True)
+                # os.system(f'chmod -R 776 {debug_note}') # add write permission to group
                 # os.chmod(debug_note, 0o664) # add write permission to group
             except:
                 print(f'Cannot change permission for {debug_note}')
@@ -169,7 +172,8 @@ def append_debug(df, processing, processed_dir=processed_dir):
             with open(manual_debug_note, 'w') as file:
                 file.write("") # create empty file
             try:
-                os.system(f'chmod -R 776 {manual_debug_note}') # add write permission to group
+                completed = subprocess.run(['chmod', '-R 776', manual_debug_note], capture_output=True)
+                # os.system(f'chmod -R 776 {manual_debug_note}') # add write permission to group
                 # os.chmod(manual_debug_note, 0o664) # add write permission to group
             except:
                 print(f'Cannot change permission for {manual_debug_note}')
@@ -313,7 +317,8 @@ def aggregate_ind_status(dsnumber, processed_dir=processed_dir):
     if not os.path.exists(log_dir):
         os.mkdir(log_dir)
         try:
-            os.system(f'chmod -R 776 {log_dir}') # add write permission to group
+            completed = subprocess.run(['chmod', '-R 776', log_dir], capture_output=True)
+            # os.system(f'chmod -R 776 {log_dir}') # add write permission to group
         except:
             pass
 
