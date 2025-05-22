@@ -12,10 +12,10 @@ import json
 
 raw_dir = "/data/qumulo/openneuro"
 processed_dir = "/data/qumulo/openneuro/processed"
-sccn_dir = "/var/local/www/eeglab/NEMAR"
+sccn_dir = "/var/local/www/eeglab/NEMAR-pipeline/web"
 final_file = os.path.join(sccn_dir,"pipeline_status_all.csv") #"/data/qumulo/openneuro/processed/logs/pipeline_status_all.csv" #"/expanse/projects/nemar/dtyoung/NEMAR-pipeline/temp/processed/pipeline_status_all.csv"
 final_file_html = os.path.join(sccn_dir,"pipeline_status_all.html") #"/data/qumulo/openneuro/processed/logs/pipeline_status_all.html" 
-manual_note_dir = "/var/local/www/eeglab/NEMAR/manual_notes"
+manual_note_dir = "/var/local/www/eeglab/NEMAR-pipeline/web/manual_notes"
 check_processing_flag = False
 try:
     logfile = open(os.path.join(sccn_dir,'log.txt'),'w')
